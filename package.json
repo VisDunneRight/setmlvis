@@ -1,0 +1,91 @@
+{
+  "name": "setmlvis",
+  "version": "0.1.0",
+  "description": "A new visualization method for comparing different models for bounding box detection.",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "jupyterlab-extension",
+    "widgets"
+  ],
+  "files": [
+    "lib/**/*.js",
+    "dist/*.js",
+    "css/*.css"
+  ],
+  "homepage": "https://github.com/VisDunneRight/setmlvis",
+  "bugs": {
+    "url": "https://github.com/VisDunneRight/setmlvis/issues"
+  },
+  "license": "BSD-3-Clause",
+  "author": {
+    "name": "Tarik Crnovrsanin",
+    "email": "turokhunter@gmail.com"
+  },
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VisDunneRight/setmlvis"
+  },
+  "scripts": {
+    "build": "webpack --mode=development && jupyter labextension build --development=True .",
+    "build:prod": "webpack --mode=production && jupyter labextension build .",
+    "clean": "npm run clean:lib && npm run clean:nbextension && npm run clean:labextension",
+    "clean:lib": "rimraf lib",
+    "clean:labextension": "rimraf setmlvis/labextension",
+    "clean:nbextension": "rimraf setmlvis/nbextension/static/index.js",
+    "fix": "prettier --plugin-search-dir . --write src && eslint . --ext .ts,.tsx,.svelte --fix",
+    "check": "prettier --plugin-search-dir . --check src && eslint . --ext .ts,.tsx,.svelte",
+    "prepack": "npm run build:prod",
+    "watch": "npm run watch:nbextension",
+    "watch:nbextension": "webpack --watch --mode=development",
+    "watch:labextension": "jupyter labextension watch .",
+    "test": "uvu -r tsm tests"
+  },
+  "dependencies": {
+    "@jupyter-widgets/base": "^1.1.10 || ^2 || ^3 || ^4 || ^5 || ^6",
+    "d3": "^7.4.4",
+    "simple-statistics": "^7.8.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.0",
+    "@babel/preset-env": "^7.5.0",
+    "@jupyterlab/builder": "^3.0.0",
+    "@lumino/application": "^1.6.0",
+    "@lumino/widgets": "^1.6.0",
+    "@tsconfig/svelte": "^3.0.0",
+    "@types/d3": "^7.4.0",
+    "@types/webpack-env": "^1.13.6",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "acorn": "^7.2.0",
+    "css-loader": "^6.7.0",
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-svelte3": "^4.0.0",
+    "fs-extra": "^7.0.0",
+    "identity-obj-proxy": "^3.0.0",
+    "mkdirp": "^0.5.1",
+    "npm-run-all": "^4.1.3",
+    "prettier": "^2.8.0",
+    "prettier-plugin-svelte": "^2.8.1",
+    "rimraf": "^2.6.2",
+    "source-map-loader": "^1.1.3",
+    "style-loader": "^3.0.0",
+    "svelte": "^3.54.0",
+    "svelte-loader": "^3.1.5",
+    "svelte-preprocess": "5.0.0",
+    "ts-loader": "^9.0.0",
+    "tslib": "^2.4.1",
+    "tsm": "^2.2.1",
+    "typescript": "^4.9.3",
+    "uvu": "^0.5.3",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.0.0"
+  },
+  "jupyterlab": {
+    "extension": true,
+    "outputDir": "setmlvis/labextension/"
+  }
+}

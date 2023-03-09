@@ -1,0 +1,33 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "esModuleInterop": true,
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "moduleResolution": "node",
+    "noEmitOnError": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "resolveJsonModule": true,
+    "rootDir": "src",
+    "sourceMap": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "types": [
+      "svelte",
+      "node"
+    ],
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.svelte"
+  ],
+  "exclude": [
+    "src/**/__tests__"
+  ]
+}
