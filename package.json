@@ -46,7 +46,8 @@
   "dependencies": {
     "@jupyter-widgets/base": "^1.1.10 || ^2 || ^3 || ^4 || ^5 || ^6",
     "d3": "^7.4.4",
-    "simple-statistics": "^7.8.0"
+    "simple-statistics": "^7.8.0",
+    "svelte-material-ui": "^7.0.0-beta.0"
   },
   "devDependencies": {
     "@babel/core": "^7.5.0",
@@ -54,6 +55,7 @@
     "@jupyterlab/builder": "^3.0.0",
     "@lumino/application": "^1.6.0",
     "@lumino/widgets": "^1.6.0",
+    "@smui/slider": "^7.0.0-beta.0",
     "@tsconfig/svelte": "^3.0.0",
     "@types/d3": "^7.4.0",
     "@types/webpack-env": "^1.13.6",

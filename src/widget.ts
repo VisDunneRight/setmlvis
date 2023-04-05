@@ -10,9 +10,11 @@ import { setStoreModels } from './stores';
 
 import { MODULE_NAME, MODULE_VERSION } from './version';
 
-import Widget from './Widget.svelte'
+import Widget from './components/Widget.svelte'
 
 export class SetMLVisModel extends DOMWidgetModel {
+  //These are the defaults used when excuting the model
+  // Any variables add to widget.py should also be added here
   defaults() {
     return {
       ...super.defaults(),
@@ -22,7 +24,10 @@ export class SetMLVisModel extends DOMWidgetModel {
       _view_name: SetMLVisModel.view_name,
       _view_module: SetMLVisModel.view_module,
       _view_module_version: SetMLVisModel.view_module_version,
-      value: 'Hello World2',
+      data: {},
+      num_instance: 0,
+      height: 600,
+      IOU:0.8,
     };
   }
 

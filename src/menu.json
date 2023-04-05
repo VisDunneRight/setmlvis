@@ -1,0 +1,49 @@
+{
+  "General": [
+    {
+      "id": "genIOU",
+      "name":"Set Generation IOU",
+      "type": "slider",
+      "value": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "Create New Sets":[
+    {
+      "id": "truePositiveIOU",
+      "name":"True Positive IOU",
+      "type": "slider",
+      "value": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "confidence",
+      "name":"Confidence",
+      "type": "double-slider",
+      "value": 0.7,
+      "value2": 0.99,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "detectionSize",
+      "name":"Detection Size",
+      "type": "double-slider",
+      "value": 0.01,
+      "value2": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "genNewVis",
+      "name":"Generate New Visualization",
+      "type": "button"
+    }
+  ]
+}

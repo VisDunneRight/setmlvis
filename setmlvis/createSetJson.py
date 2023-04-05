@@ -1,6 +1,7 @@
 import os
 import itertools
 import json
+from PIL import Image
 from shapely.geometry import Polygon
 
 
@@ -10,8 +11,8 @@ from shapely.geometry import Polygon
 def createSetJson(*,
                   folderName:str,
                   objectClass:str,
-                  jsonName:str,
-                  setIou:float):
+                  jsonName:str = None,
+                  setIou:float) -> dict:
     """
     Create a JSON file that contains information about objects in a specified class, stored in a given folder.
 
@@ -29,9 +30,11 @@ def createSetJson(*,
     emptyDictionary = createEmptyDictionary(modelNames)
     allFilesDictionary = parseInputFolder(folderName, objectClass, modelNames)
 
-    finalDictionary = fillDictionary(emptyDictionary, allFilesDictionary, modelNames, setIou, objectClass)
-
-    generateJson(finalDictionary, jsonName)
+    finalDictionary = fillDictionary(folderName, emptyDictionary, allFilesDictionary, modelNames, setIou, objectClass)
+    
+    if jsonName != None:
+      generateJson(finalDictionary, jsonName)
+    return finalDictionary
 
 
 
@@ -121,7 +124,7 @@ def parseInputFolder(folderName: str, objectClass: str, modelNames: list[str]) -
    
 
 
-def fillDictionary(emptyDictionary, allFilesDictionary, modelNames, iou, filterClass):
+def fillDictionary(folderName, emptyDictionary, allFilesDictionary, modelNames, iou, filterClass):
     """
     This function fills the empty dictionary with information about the bounding boxes for each image.
     
@@ -159,12 +162,12 @@ def fillDictionary(emptyDictionary, allFilesDictionary, modelNames, iou, filterC
         where model1, model2, ..., modelN are the names of the models used to generate the bounding boxes.
     """
     for key, value in allFilesDictionary.items():
-        bigDict = getEachImageInformation(key, value, iou, modelNames, filterClass)
+        bigDict = getEachImageInformation(folderName, key, value, iou, modelNames, filterClass)
         for key, value in bigDict.items():
             emptyDictionary[key].append(value)
     return emptyDictionary
 
-def getEachImageInformation(imageName, inp, iouAlgos, modelNames, filterClass):
+def getEachImageInformation(folderName, imageName, inp, iouAlgos, modelNames, filterClass):
     """
     This function takes an image name, a dictionary of input bounding boxes, an IOU threshold, a list of model names, and a filter class, and returns a dictionary containing information about the bounding boxes.
     
@@ -190,7 +193,7 @@ def getEachImageInformation(imageName, inp, iouAlgos, modelNames, filterClass):
         
         for subset in itertools.combinations(modelNames, L):
             if len(subset)!= 0:
-                dictionary, inp = getRealSets(inp, subset, iouAlgos, imageName, filterClass, ground_truth_boxes)    
+                dictionary, inp = getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, ground_truth_boxes)    
                 stringTotal = ""
                 for s in subset:
                     stringTotal = stringTotal+s + ','
@@ -206,7 +209,7 @@ def getEachImageInformation(imageName, inp, iouAlgos, modelNames, filterClass):
                 
     return bigDict
 # commented
-def getRealSets(inp, subset, iouAlgos, imageName, filterClass, ground_truth_boxes):
+def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, ground_truth_boxes):
     """
     This function finds the intersection and union between sets of bounding boxes and returns a list of dictionaries containing information about the bounding boxes with the highest IOU.
     
@@ -258,6 +261,8 @@ def getRealSets(inp, subset, iouAlgos, imageName, filterClass, ground_truth_boxe
                     newDict['imgName'] = imageName
                     newDict['IOU'] = key                        
                     newDict['boxes'] = dict(zip(subset, value))
+                    im = Image.open(folderName + 'images/' + imageName)
+                    newDict['imgSize'] = im.size
                     polygonShape = getIntersection(value)
                     newAreaCoords = list(polygonShape.exterior.coords)
                     x,y = list(zip(*newAreaCoords))

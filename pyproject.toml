@@ -34,6 +34,7 @@ classifiers = [
 dependencies = [
     "ipywidgets>=7.0.0",
     "shapely>=2.0.1",
+    "Pillow>=9.5",
 ]
 version = "0.1.0.dev0"
 

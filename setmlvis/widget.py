@@ -9,7 +9,10 @@ TODO: Add module docstring
 """
 
 from ipywidgets import DOMWidget
-from traitlets import Unicode, Integer
+from traitlets import Unicode, Int, Float, Dict
+from typing import Union
+from pathlib import Path
+import json
 from ._frontend import module_name, module_version
 
 
@@ -23,4 +26,33 @@ class SetMLVisWidget(DOMWidget):
     _view_module = Unicode(module_name).tag(sync=True)
     _view_module_version = Unicode(module_version).tag(sync=True)
 
-    value = Unicode('Hello World').tag(sync=True)
+    dataset = Dict({}).tag(sync=True)
+
+    num_instances = Int(0).tag(sync=True)
+    IOU = Float(0.8).tag(sync=True)
+    height = Int(600).tag(sync=True)
+    def __init__(
+        self,
+        data: Union[str, Path, dict],
+        height: int = 600,
+        IOU: float = 0.8,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        # if data is a path or string, then read the file at that path
+        # if isinstance(data, Path) or isinstance(data, str):
+        #     path = Path(data).resolve()
+
+        #     if not path.exists():
+        #         raise OSError(f"Cannot read {path}")
+
+        #     json_data = path.read_text(encoding="utf-8")
+        #     data = json.loads(json_data)
+
+
+        # synced widget state
+        self.dataset = data
+        self.num_instances = 10
+        self.height = height
+        self.IOU = IOU
