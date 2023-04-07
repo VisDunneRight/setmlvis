@@ -1,6 +1,5 @@
 <script lang="ts">
  import {menuWidth, windowWidth} from '../stores';
- $:console.log('Width:', $windowWidth)
 </script>
 <div class="set-vis-container" 
     style:width="{($windowWidth - $menuWidth)/2}px" 
