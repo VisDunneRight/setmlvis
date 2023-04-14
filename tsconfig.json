@@ -13,7 +13,6 @@
     "noUnusedLocals": true,
     "outDir": "lib",
     "resolveJsonModule": true,
-    "rootDir": "src",
     "sourceMap": true,
     "strict": true,
     "strictPropertyInitialization": false,

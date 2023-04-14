@@ -1,7 +1,7 @@
 
 <script lang="ts">
   import type { ImgData } from '../../types';
-  import {selectedImg} from '../../stores';
+  import {selectedImg, openDetailView} from '../../stores';
   export let data:ImgData;
   export let height:number;
   let imgWidth = data === undefined ? 0 : data.imgSize[0];
@@ -10,7 +10,7 @@
   let width = height*imgRatio;
   function selectImgData(){
     $selectedImg = data;
-    console.log($selectedImg);
+    $openDetailView = true;
   }
 
 </script>
@@ -20,7 +20,7 @@
   >
   {#if data}
   <button on:click={()=>{selectImgData()}}>
-  <img height="{height}px" src="data/fiveImages/images/{data.imgName}" alt="selected Figure"/>
+  <img height="{height}px" src="data/twentyFiveImages/images/{data.imgName}" alt="selected Figure"/>
   <svg width={width} height={height}>
     {#each Object.entries(data.boxes) as [, box]}
       <rect

@@ -1,24 +1,16 @@
 <script lang="ts">
-import {dataset} from '../stores';
-let selected = $dataset['yolos-base,'];
-import DrawThumbnail from './vis/DrawThumbnail.svelte';
-let imgHeight = 100;
-console.log($dataset, selected);
+  import { selectedCol } from '../stores';
+  import DrawThumbnail from './vis/DrawThumbnail.svelte';
+  let imgHeight = 100;
 </script>
 <div class="collection-container" 
      style:width="100%" 
      style:height="40%">
   <div class="media-scroller">
-  {#each Object.entries(selected) as [, arryList]}
-    {#if !(Object.entries(arryList).length === 1 && 'FN' in arryList)}
-      {#each Object.entries(arryList) as [name, obj]}
-        {#if name !== 'FN'}
-            <DrawThumbnail data={obj} height={imgHeight}/>
-        {/if}
-      {/each}
-    {/if}
-  {/each}
-</div>
+    {#each $selectedCol as imgInfo}
+      <DrawThumbnail data={imgInfo} height={imgHeight}/>
+    {/each}
+  </div>
 </div>
 
 

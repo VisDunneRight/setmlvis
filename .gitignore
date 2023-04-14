@@ -155,3 +155,4 @@ setmlvis/labextension/*.tgz
 # Packed lab extensions
 setmlvis/labextension
 examples/data/*
+examples/twentyFiveImages.json

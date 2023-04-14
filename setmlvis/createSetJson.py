@@ -31,12 +31,32 @@ def createSetJson(*,
     allFilesDictionary = parseInputFolder(folderName, objectClass, modelNames)
 
     finalDictionary = fillDictionary(folderName, emptyDictionary, allFilesDictionary, modelNames, setIou, objectClass)
-    
+    finalDictionaryWithMetadata = generateMetadata(finalDictionary, modelNames, setIou)
+
     if jsonName != None:
-      generateJson(finalDictionary, jsonName)
-    return finalDictionary
+      generateJson(finalDictionaryWithMetadata, jsonName)
+    return finalDictionaryWithMetadata
 
 
+def generateMetadata(dictionary, modelNames, setIOU):
+    """
+    Adds metadata to a dictionary object.
+
+    Parameters:
+        dictionary (dict): A dictionary object to which metadata will be added.
+        modelNames (list): A list of model names.
+        setIOU (float): The IOU value used for the evaluation.
+
+    Returns:
+        dict: The dictionary object with metadata added.
+
+    """
+    dictionary['meta'] = {
+        'folderName': 'images/',
+        'modelNames': modelNames,
+        'setIOU': setIOU
+    }
+    return dictionary
 
 
 def getModelNames(directory: str) -> list[str]:
