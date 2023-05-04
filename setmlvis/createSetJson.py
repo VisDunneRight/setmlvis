@@ -31,14 +31,14 @@ def createSetJson(*,
     allFilesDictionary = parseInputFolder(folderName, objectClass, modelNames)
 
     finalDictionary = fillDictionary(folderName, emptyDictionary, allFilesDictionary, modelNames, setIou, objectClass)
-    finalDictionaryWithMetadata = generateMetadata(finalDictionary, modelNames, setIou)
+    finalDictionaryWithMetadata = generateMetadata(folderName, finalDictionary, modelNames, setIou)
 
     if jsonName != None:
       generateJson(finalDictionaryWithMetadata, jsonName)
     return finalDictionaryWithMetadata
 
 
-def generateMetadata(dictionary, modelNames, setIOU):
+def generateMetadata(folderName, dictionary, modelNames, setIOU):
     """
     Adds metadata to a dictionary object.
 
@@ -52,7 +52,7 @@ def generateMetadata(dictionary, modelNames, setIOU):
 
     """
     dictionary['meta'] = {
-        'folderName': 'images/',
+        'folderName': folderName + 'images/',
         'modelNames': modelNames,
         'setIOU': setIOU
     }
@@ -116,20 +116,24 @@ def parseInputFolder(folderName: str, objectClass: str, modelNames: list[str]) -
 
     for filename in os.listdir(imageDirectory):
 
-        if filename.endswith('.jpg'):
+        if filename.endswith(('.jpg', '.jpeg', '.png')):
+    
             imgName = filename[:filename.rfind('.')]
             fileTxt = filename[:filename.rfind('.')] + '.txt'
             fileDict = {}
 
             for folder in modelNames:
+                
                 fileDict[folder] = []
 
                 with open(os.path.join(folderName + folder + '/', fileTxt)) as f:
                     lines = f.readlines()
+                    
                     for l in lines:
                         arrL = l.split()
                         if arrL[0] == filterClass:
                             fileDict[folder].append(l.split())
+                           
 
             fileDict['ground_truth'] = []
             with open(os.path.join(folderName + 'ground_truth/', fileTxt)) as f:
@@ -182,54 +186,59 @@ def fillDictionary(folderName, emptyDictionary, allFilesDictionary, modelNames, 
         where model1, model2, ..., modelN are the names of the models used to generate the bounding boxes.
     """
     for key, value in allFilesDictionary.items():
+ 
         bigDict = getEachImageInformation(folderName, key, value, iou, modelNames, filterClass)
         for key, value in bigDict.items():
             emptyDictionary[key].append(value)
     return emptyDictionary
 
 def getEachImageInformation(folderName, imageName, inp, iouAlgos, modelNames, filterClass):
-    """
-    This function takes an image name, a dictionary of input bounding boxes, an IOU threshold, a list of model names, and a filter class, and returns a dictionary containing information about the bounding boxes.
-    
-    Parameters:
-        imageName (str): The name of the image being processed.
-        inp (dict): A dictionary containing the input bounding boxes.
-        iouAlgos (float): The IOU threshold for accepting a bounding box as a true positive.
-        modelNames (list): A list of the names of the models being processed.
-        filterClass (str): The class of object being filtered.
-    
-    Returns:
-        dict: A dictionary containing information about the bounding boxes.
-    """
     bigDict = {}
     dictionary = []
     removeItems = []
-    ground_truth_boxes = {}  # Initialize a dictionary to keep track of the ground truth boxes used for each model name
+    previous_gt_shapes = set()
+
+    ground_truth_boxes = {}
     for model_name in modelNames:
-        ground_truth_boxes[model_name] = []  # Initialize an empty list for each model name
-    for L in range(len(modelNames)+1, -1, -1):     
-  
+        ground_truth_boxes[model_name] = []
+
+    used_gt_by_image = {}  # Initialize a dictionary to store used ground truth bounding boxes for each image
+
+    for L in range(len(modelNames) + 1, -1, -1):
         reduceInput(removeItems, inp)
-        
+
         for subset in itertools.combinations(modelNames, L):
-            if len(subset)!= 0:
-                dictionary, inp = getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, ground_truth_boxes)    
+            if len(subset) != 0:
+                dictionary, inp, previous_gt_shapes = getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, ground_truth_boxes, previous_gt_shapes, used_gt_by_image)
+
                 stringTotal = ""
                 for s in subset:
-                    stringTotal = stringTotal+s + ','
+                    stringTotal = stringTotal + s + ','
                 for key, dictionaryItem in dictionary.items():
                     if key != 'FN':
-                        for key, value in dictionaryItem['boxes'].items():
-                            removeItems.append(value)
-                            for model_name in subset:
-                                if 'gtShape' in dictionaryItem:
-                                    ground_truth_boxes[model_name].append(dictionaryItem['gtShape'])  # For each model name in the subset, add the used ground truth box to its list
-                                
+                        for model_name, box in dictionaryItem['boxes'].items():
+
+                            box_key = model_name
+                            box_value = box
+                            removeItems.append(box_value)
+                            if 'gtShape' in dictionaryItem:
+                                ground_truth_boxes[model_name].append(dictionaryItem['gtShape'])
+
+                # Update the used_gt_by_image dictionary
+                for model_name in subset:
+                    for box in ground_truth_boxes[model_name]:
+                        if imageName not in used_gt_by_image:
+                            used_gt_by_image[imageName] = []
+                        used_gt_by_image[imageName].append(box)
+
                 bigDict[stringTotal] = dictionary
-                
+
     return bigDict
+
+
+
 # commented
-def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, ground_truth_boxes):
+def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, ground_truth_boxes, previous_gt_shapes, used_gt_by_image):
     """
     This function finds the intersection and union between sets of bounding boxes and returns a list of dictionaries containing information about the bounding boxes with the highest IOU.
     
@@ -246,15 +255,17 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
     """
     dictionary = {}
     arr = []
-
+   
     # Create a list of the input bounding boxes from the subset
     for s in subset:
         arr.append(inp[s]) 
+   
     
     dictRank = []
     
     # Calculate the IOU between each combination of input bounding boxes
     for x in itertools.product(*arr):
+
         intersection = getIntersection(x)
         if intersection.area == 0:
             continue
@@ -266,11 +277,13 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
     # Sort the list of IOU values in descending order
     sortedList = sorted(dictRank, key=lambda x: x[0], reverse = True)
     values_to_remove = []
+
     
 
     # Keep only the bounding boxes with IOU values higher than the threshold
     count = 0
     for key, value in (sortedList):
+        
         if key != 0:
             if key >= iouAlgos:
                 values_to_remove = value
@@ -293,7 +306,7 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
                     xmax = max(x)
                     ymax = max(y)
                     shape = [xmin, ymin, xmax, ymax]
-                    newDict['shape'] = shape
+                    newDict['shape'] = [filterClass] + shape
                     confidenceArray = []
                     for v in value:
                         confidenceArray.append(v[-1])
@@ -315,11 +328,10 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
     # Calculate the IOU between each ground truth bounding box and the input bounding
     for gt in unusedGTArray:
         for key, item in dictionary.items():
-        # for item in dictionary:
-            shapeArr = item['shape'].copy()
-            shapeArr.insert(0, filterClass)
+
             dictItem = {}
-            value = [gt, shapeArr]
+            value = [gt, item['shape']]
+
             intersection = getIntersection(value)
      
             union = getUnion(value)
@@ -357,8 +369,73 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
 
     falseNegatives = findFalseNegatives(gtArray, filtered_list)
     dictionary['FN'] = falseNegatives
+
+     # Add these lines to initialize the false positive categories
+
+
+    for key, item in dictionary.items():
+        if 'FN' not in key:  # Check the key instead of the item
+            if item['iouGT'] == 0.0:
+                duplicate_detected = False
+                # Case 1: Duplicate detection on the same object
+                if imageName in used_gt_by_image:
+                    for used_gt in used_gt_by_image[imageName]:
+                        intersection = getIntersection([item['shape'], used_gt])
+                        union = getUnion([item['shape'], used_gt])
+                        IOU = intersection.area / union.area
+                        if IOU > 0:  # Replace iou_threshold with a suitable value
+                            item['category'] = 'duplicate'  # Add category information
+                            duplicate_detected = True
+                            break
+                       
+
+                if not duplicate_detected:
+                    # Case 2: Wrong class detection
+                    
+                    item['category'] = 'wrong_class'  # Add category information
+                    gt_txt_file = folderName + 'ground_truth/' + imageName.replace('.jpg', '.txt').replace('.jpeg', '.txt').replace('.png', '.txt')
+                    with open(gt_txt_file, 'r') as f:
+                        gt_lines = f.readlines()
+                        
+
+                    gt_boxes = []
+                    for line in gt_lines:
+                        gt_data = line.strip().split()
+                        gt_class = gt_data[0]
+                        gt_box = [float(coord) for coord in gt_data[1:]]
+                        if gt_class != filterClass:
+                            gt_boxes.append((gt_class, gt_box))
+                    
+
+                    for gt_class, gt_box in gt_boxes:
+
+                        value = [item['shape'], [gt_class]+gt_box]
+                        
+                        intersection = getIntersection(value)
+                        if intersection.area == 0:
+                            continue
+                   
+                        union = getUnion(value)
+                        IOU  = intersection.area / union.area
+                        if IOU >= 0.5:  # The IOU threshold for checking overlaps
+                            item['category'] = 'wrong_class'
+                            break
+                    else:
+                        item['category'] = 'far_away'  # Add category information
+            else:
+                item['category'] = 'normal'  # Add category information for normal detections
+
+
+    # # Add these lines to store false positive categories in the dictionary
+    # dictionary['duplicate_detections'] = duplicate_detections
+    # dictionary['wrong_class_detections'] = wrong_class_detections
+    # dictionary['far_away_detections'] = far_away_detections
+    for key, value in dictionary.items():
+        if 'gtShape' in value and value['iouGT'] > 0.0:
+            previous_gt_shapes.add(tuple(value['gtShape']))
+    return dictionary, inp, previous_gt_shapes
         
-    return dictionary, inp
+ 
 
 
 
@@ -464,6 +541,7 @@ def getIntersection(boundingBoxArray):
     i = 1
 
     while i < len(boundingBoxArray):
+        print(boundingBoxArray)
         xL = float(boundingBoxArray[i][1])
         xR = float(boundingBoxArray[i][3])
         yT = float(boundingBoxArray[i][2])
