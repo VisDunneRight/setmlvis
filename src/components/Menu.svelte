@@ -1,9 +1,12 @@
 <script lang="ts">
   import Group from './menuComp/Group.svelte';
-  import { fly} from 'svelte/transition';
-  import {height, menuWidth} from '../stores';
+  import {fly} from 'svelte/transition';
+  import {height, menuWidth, IOU} from '../stores';
+  import type {MenuItem, SliderType} from '../types';
+
   import menu from '../menu.json';
   let menuOpen = true;
+
 
   function openMenu(value:boolean){
     if(value){
@@ -13,6 +16,13 @@
     }
     menuOpen = value;
   }
+  let menuMap:Record<string,MenuItem > = {};
+  menu.forEach((menuItem)=>{
+    menuMap[menuItem.id] = menuItem;
+  })
+
+  $IOU = (menuMap['truePositiveIOU'] as SliderType).value;
+
   //https://iconsvg.xyz/  
 </script>
 {#if menuOpen === true}

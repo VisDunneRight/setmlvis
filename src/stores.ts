@@ -2,7 +2,7 @@ import type { Writable } from 'svelte/store';
 import type {DOMWidgetModel} from '@jupyter-widgets/base'
 
 import { writable } from 'svelte/store';
-import type { Data, ImgData } from './types'
+import type { Data, ImgData, StringNumMap } from './types'
 
 // //boilerplate code that will be ignored for now
 // interface WidgetWritable<T> extends Writable<T> {
@@ -94,6 +94,7 @@ export let windowWidth: Writable<number>;
 export let menuWidth: Writable<number>;
 export let selectedImg:Writable<ImgData>
 export let openDetailView: Writable<boolean>;
+export let colorMap: Writable<StringNumMap>;
 
 // Set the model for each store you create.
 export function setStoreModels(model: DOMWidgetModel): void {
@@ -109,4 +110,5 @@ export function setStoreModels(model: DOMWidgetModel): void {
   menuWidth = writable(200);
   selectedImg = writable(undefined);
   openDetailView = writable(false);
+  colorMap = writable<StringNumMap>({});
 }

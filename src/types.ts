@@ -3,6 +3,16 @@
 export type Data = Record<string, Array<DataRes> >
 export type DataRes = {'FN': FN} & Record<string, ImgData>
 
+export type ImgInfo = {
+  height: number,
+  left: number,
+  top: number,
+  data: ImgData
+}
+
+export type StringNumMap = {
+  [index:string] : number;
+}
 
 export type ImgData = {
   IOU:number,

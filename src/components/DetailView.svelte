@@ -1,6 +1,8 @@
 <script lang="ts">
   import {menuWidth, windowWidth, selectedImg, height, openDetailView} from '../stores';
   import DrawTextbox from './vis/DrawTextbox.svelte';
+  import { colorMap } from '../stores';
+  import { color } from '../ulit';
 
   // Try loading the figure and finding its position
   // Add svg/bounding box
@@ -23,7 +25,8 @@
   }
 
   $:newImg = calculateAspectRatioFit(imgWidth, imgHeight, compWidth, compHeight);
-
+  
+  $:console.log($selectedImg)
 </script>
 
 <div id="model" class="modal {$openDetailView ? 'modalon': ''}">
@@ -38,11 +41,30 @@
                 height="{newImg.height}" 
                 src="data/twentyFiveImages/images/{$selectedImg.imgName}" alt="selected Figure"/>
               <svg width={newImg.width} height={newImg.height}>
-                {#each Object.entries($selectedImg.boxes) as [, box]}
+                {#if $selectedImg.iouGT > 0}
+                  <DrawTextbox 
+                        x={+$selectedImg.gtShape[1]*newImg.width} 
+                        y={+$selectedImg.gtShape[2]*newImg.height}
+                        backgroundColor="white"
+                        size={13}
+                        textColor='black'
+                        text='Ground truth'
+                        />
+                  <rect
+                    x={+$selectedImg.gtShape[1]*newImg.width}
+                    y={+$selectedImg.gtShape[2]*newImg.height}
+                    width={(+$selectedImg.gtShape[3] - +$selectedImg.gtShape[1])*newImg.width}
+                    height={(+$selectedImg.gtShape[4] - +$selectedImg.gtShape[2])*newImg.height}
+                    fill="none"
+                    stroke="white"
+                    />
+                {/if}
+                {#each Object.entries($selectedImg.boxes) as [name, box]}
                   <DrawTextbox 
                     x={box[1]*newImg.width} 
                     y={box[2]*newImg.height}
-                    backgroundColor="green"
+                    backgroundColor="{color[colorMap[name]]}"
+                    textColor='white'
                     size={13}
                     text={showConfidence(box[0], box[5])}
                     />
@@ -52,9 +74,10 @@
                   width={(box[3] - box[1])*newImg.width}
                   height={(box[4] - box[2])*newImg.height}
                   fill="none"
-                  stroke="green"
+                  stroke="{color[colorMap[name]]}"
                   />
               {/each}
+              
             </svg>
           </div>
         {/if}

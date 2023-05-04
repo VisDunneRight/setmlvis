@@ -1,39 +1,53 @@
 
 <script lang="ts">
   import type { ImgData } from '../../types';
-  import {selectedImg, openDetailView} from '../../stores';
+  import {selectedImg, openDetailView, colorMap} from '../../stores';
+  import {color } from '../../ulit';
+  
   export let data:ImgData;
   export let height:number;
-  let imgWidth = data === undefined ? 0 : data.imgSize[0];
-  let imgHeight = data === undefined ? 0 : data.imgSize[1];
-  let imgRatio = imgWidth/imgHeight;
-  let width = height*imgRatio;
+  export let top:number;
+  export let left:number;
+  $:imgWidth = data === undefined ? 0 : data.imgSize[0];
+  $:imgHeight = data === undefined ? 0 : data.imgSize[1];
+  $:imgRatio = imgWidth/imgHeight;
+  $:width = height*imgRatio;
   function selectImgData(){
     $selectedImg = data;
     $openDetailView = true;
   }
-
+ 
 </script>
 <div 
   class="media-element" 
-  style="width:{width}px;height:{height}px" 
+  style="width:{width}px;height:{height}px;left:{left}px;top:{top}px" 
   >
   {#if data}
-  <button on:click={()=>{selectImgData()}}>
-  <img height="{height}px" src="data/twentyFiveImages/images/{data.imgName}" alt="selected Figure"/>
-  <svg width={width} height={height}>
-    {#each Object.entries(data.boxes) as [, box]}
-      <rect
-       x={box[1]*width}
-       y={box[2]*width/imgRatio}
-       width={(box[3] - box[1])*width}
-       height={(box[4] - box[2])*width/imgRatio}
-       fill="none"
-       stroke="green"
-      />
-    {/each}
-  </svg>
-</button>
+    <button on:click={()=>{selectImgData()}}>
+      <img height="{height}px" src="data/twentyFiveImages/images/{data.imgName}" alt="selected Figure"/>
+      <svg width={width} height={height}>
+        {#each Object.entries(data.boxes) as [name, box]}
+          <rect
+          x={box[1]*width}
+          y={box[2]*width/imgRatio}
+          width={(box[3] - box[1])*width}
+          height={(box[4] - box[2])*width/imgRatio}
+          fill="none"
+          stroke="{color[colorMap[name]]}"
+          />
+        {/each}
+        {#if data.iouGT > 0}
+          <rect
+            x={+data.gtShape[1]*width}
+            y={+data.gtShape[2]*width/imgRatio}
+            width={(+data.gtShape[3] - +data.gtShape[1])*width}
+            height={(+data.gtShape[4] - +data.gtShape[2])*width/imgRatio}
+            fill="none"
+            stroke="white"
+            />
+        {/if}
+      </svg>
+    </button>
   {/if}
 </div>
 <style>
@@ -48,6 +62,6 @@
     border-radius: 0.25rem;
     /* flex: 1; */
     background-color: black;
-    position: relative;    
+    position: absolute;    
   }
 </style>
