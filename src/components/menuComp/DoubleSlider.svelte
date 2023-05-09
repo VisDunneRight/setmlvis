@@ -32,6 +32,7 @@
   min={option.min} 
   max={option.max}
   step={option.step}
+  on:stop={() => {option.updatefunction(values)}}
   />
   
 <style>

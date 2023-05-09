@@ -31,6 +31,7 @@ export type ButtonItem = {
   id:string,
   name:string,
   type:'button'
+  updatefunction: (arg0:any) => void
 }
 
 export type SliderType = {
@@ -40,7 +41,8 @@ export type SliderType = {
   min:number,
   max:number,
   step:number,
-  value:number
+  value:number,
+  updatefunction: (arg0:any) => void
 }
 
 export type DoubleSliderType = {
@@ -51,7 +53,8 @@ export type DoubleSliderType = {
   value2:number,
   min:number,
   max:number,
-  step:number
+  step:number,
+  updatefunction: (arg0:any) => void
 }
 
 export type FN = [string, string, string, string, string]

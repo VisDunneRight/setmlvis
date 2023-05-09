@@ -4,6 +4,9 @@
   import type { DataRes, ImgData } from '../types';
   import { color } from '../ulit';
 
+  $: mouseOverI = -1;
+  $: colSelected = -1;
+  $: barSelected = '';
   const metaModel = $dataset['meta']['modelNames'];
   const padding = { top: 20, right: 15, bottom: 20, left: 10 };
   const config = {
@@ -29,6 +32,7 @@
     falsePos: number;
     data: DataRes[];
   };
+
   let data: Array<ColumnType> = [];
   function modelExists(nameArry: Array<string>, model: string) {
     let matchFound = false;
@@ -44,7 +48,7 @@
       return false;
     }
   }
-  $:console.log(IOU)
+
   Object.entries($dataset).forEach(([name, arryList]) => {
     if (name === 'meta') {
       return;
@@ -95,7 +99,7 @@
   let yTicks: Array<number> = [];
   let step = (extentY[1] - extentY[0])/config.ytickCount;
   step = Math.ceil(step/5) * 5;
-  $:console.log(step);
+  
   for(let i = 0; i <= config.ytickCount; i++){
     yTicks.push(i*step + extentY[0])
   }
@@ -125,7 +129,7 @@
     );
   }
 
-  function selectModel(model: ColumnType, type: string) {
+  function selectModel(model: ColumnType, ind:number, type: string) {
     let selection: ImgData[] = [];
     if (type === 'true positive') {
       model.data.forEach((obj) => {
@@ -150,10 +154,12 @@
         });
       });
     }
-
+    colSelected = ind;
+    barSelected = type;
     $selectedCol = selection;
-    console.log($selectedCol);
   }
+
+  $:console.log(colSelected, barSelected, data);
 </script>
 
 <div class="set-vis-container" style:width="100%" style:height="{winHeight}px">
@@ -193,46 +199,62 @@
         </g>
       {/each}
     </g>
-    <g class="column">
+    
       {#each data as col, i}
-        <g class="circles">
-          {#each col.models as mod, j}
-            <circle
-              cx={columnSpacing(i)}
-              cy={modelRow(j)}
-              r={config.circleRadius}
-              fill={mod ? '#636363' : '#f0f0f0'}
-            />
-          {/each}
-        </g>
-        {#if col.modelRange.length > 1}
-          <line
-            x1={columnSpacing(i)}
-            y1={modelRow(col.modelRange[0])}
-            x2={columnSpacing(i)}
-            y2={modelRow(col.modelRange[col.modelRange.length - 1])}
-            stroke-width="4"
-            stroke="#636363"
+        <g class="column" on:mouseover={()=>{mouseOverI = i;}}
+          on:focus={()=>{mouseOverI = i;}}
+          on:mouseout={()=>{mouseOverI = -1;}}
+          on:blur={()=>{mouseOverI = -1;}} 
+          >
+          <rect
+            x={columnSpacing(i) - config.circleRadius}
+            y={padding.top}
+            width={config.circleRadius * 2}
+            height={winHeight - padding.top}
+            class="{mouseOverI === i ? 'hightlight': 'background-bar'}"
           />
-        {/if}
-        <rect
-          on:mousedown={() => selectModel(col, 'true positive')}
-          x={columnSpacing(i) - config.circleRadius}
-          y={y(col.truePos)}
-          width={config.circleRadius * 2}
-          height={y(0) - y(col.truePos)}
-          fill="#377eb8"
-        />
-        <rect
-          on:mousedown={() => selectModel(col, 'false positive')}
-          x={columnSpacing(i) - config.circleRadius}
-          y={y(col.falsePos + col.truePos)}
-          width={config.circleRadius * 2}
-          height={y(col.truePos) - y(col.falsePos + col.truePos)}
-          fill="#e41a1c"
-        />
+
+          <g class="circles" >
+            {#each col.models as mod, j}
+              <circle
+                cx={columnSpacing(i)}
+                cy={modelRow(j)}
+                r={config.circleRadius}
+                fill={mod ? '#636363' : '#f0f0f0'}
+              />
+            {/each}
+          </g>
+          {#if col.modelRange.length > 1}
+            <line
+              x1={columnSpacing(i)}
+              y1={modelRow(col.modelRange[0])}
+              x2={columnSpacing(i)}
+              y2={modelRow(col.modelRange[col.modelRange.length - 1])}
+              stroke-width="4"
+              stroke="#636363"
+            />
+          {/if}
+          <rect
+            on:mousedown={() => selectModel(col, i,'true positive')}
+            x={columnSpacing(i) - config.circleRadius}
+            y={y(col.truePos)}
+            width={config.circleRadius * 2}
+            height={y(0) - y(col.truePos)}
+            fill="#377eb8"
+            class="pointer {colSelected === i && 'true positive' === barSelected? 'selected':''}"
+          />
+          <rect
+            on:mousedown={() => selectModel(col, i, 'false positive')}
+            x={columnSpacing(i) - config.circleRadius}
+            y={y(col.falsePos + col.truePos)}
+            width={config.circleRadius * 2}
+            height={y(col.truePos) - y(col.falsePos + col.truePos)}
+            fill="#e41a1c"
+            class="pointer {colSelected === i && 'false positive' === barSelected? 'selected':''}"
+          />
+        </g>
       {/each}
-    </g>
+    
   </svg>
 </div>
 
@@ -249,6 +271,21 @@
   .column {
 
   } */
+  .selected {
+    border: 1px solid #636363;
+  }
+  .background-bar{
+    fill:none;
+    stroke: none;
+    pointer-events:all;
+  }
+  .pointer{
+    cursor:pointer;
+  }
+  .hightlight{
+    fill:#fed986;
+    /* pointer-events : none; */
+  }
   .tick {
     font-family: Helvetica, Arial;
     font-size: 0.725em;

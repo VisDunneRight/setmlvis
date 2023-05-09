@@ -93,8 +93,11 @@ export let IOU:Writable<number>;
 export let windowWidth: Writable<number>;
 export let menuWidth: Writable<number>;
 export let selectedImg:Writable<ImgData>
+export let selectedImgIdx:Writable<number>
 export let openDetailView: Writable<boolean>;
 export let colorMap: Writable<StringNumMap>;
+export let confidence:Writable<[number, number]>;
+export let detectionSize:Writable<[number, number]>;
 
 // Set the model for each store you create.
 export function setStoreModels(model: DOMWidgetModel): void {
@@ -109,6 +112,9 @@ export function setStoreModels(model: DOMWidgetModel): void {
   windowWidth = writable(600);
   menuWidth = writable(200);
   selectedImg = writable(undefined);
+  selectedImgIdx = writable(-1);
   openDetailView = writable(false);
   colorMap = writable<StringNumMap>({});
+  confidence = writable<[number, number]>([0, 1.0])
+  detectionSize = writable<[number, number]>([0, 1.0])
 }

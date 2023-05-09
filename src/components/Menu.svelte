@@ -1,7 +1,7 @@
 <script lang="ts">
   import Group from './menuComp/Group.svelte';
   import {fly} from 'svelte/transition';
-  import {height, menuWidth, IOU} from '../stores';
+  import {height, menuWidth, IOU, confidence, detectionSize} from '../stores';
   import type {MenuItem, SliderType} from '../types';
 
   import menu from '../menu.json';
@@ -21,8 +21,15 @@
     menuMap[menuItem.id] = menuItem;
   })
 
-  $IOU = (menuMap['truePositiveIOU'] as SliderType).value;
-
+  menuMap['truePositiveIOU'].updatefunction = function(value:number){
+    $IOU = value;
+  }
+  menuMap['truePositiveIOU'].updatefunction = function(values:[number, number]){
+    $confidence = values;
+  }
+  menuMap['truePositiveIOU'].updatefunction = function(values:[number, number]){
+    $detectionSize = values;
+  }
   //https://iconsvg.xyz/  
 </script>
 {#if menuOpen === true}

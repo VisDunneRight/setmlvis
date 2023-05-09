@@ -1,7 +1,7 @@
 [
   {
     "id": "truePositiveIOU",
-    "name":"IOU:",
+    "name": "IOU:",
     "type": "slider",
     "value": 0.7,
     "min": 0.0,
@@ -10,7 +10,7 @@
   },
   {
     "id": "confidence",
-    "name":"Confidence",
+    "name": "Confidence",
     "type": "double-slider",
     "value": 0.7,
     "value2": 0.99,
@@ -20,7 +20,7 @@
   },
   {
     "id": "detectionSize",
-    "name":"Detection Size",
+    "name": "Detection Size",
     "type": "double-slider",
     "value": 0.01,
     "value2": 0.4,
@@ -30,7 +30,7 @@
   },
   {
     "id": "genNewVis",
-    "name":"Generate New Visualization",
+    "name": "Generate New Visualization",
     "type": "button"
   }
 ]

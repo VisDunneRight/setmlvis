@@ -20,6 +20,7 @@
   max={option.max}
   step={option.step}
   bind:values={values}
+  on:stop={() => {option.updatefunction(values[0])}}
   />
 
 <style>

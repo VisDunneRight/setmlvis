@@ -2,8 +2,10 @@
   import { selectedCol, windowWidth, menuWidth } from '../stores';
   import type {ImgData, ImgInfo} from '../types';
   import DrawThumbnail from './vis/DrawThumbnail.svelte';
+  export let folderName = '';
   let imgHeight = 100;
   let gap = 4;
+  
   function rescaleImages(imageData:ImgData[],
                          startingHeight:number,
                          maxWidth:number,
@@ -56,8 +58,10 @@
      style:width="100%" 
      style:height="40%">
   <div class="media-scroller">
-    {#each imgInfo as img}
-      <DrawThumbnail left={img.left} top={img.top} data={img.data} height={img.height}/>
+    {#each imgInfo as img, i}
+      <DrawThumbnail left={img.left} top={img.top}
+                     data={img.data} height={img.height}
+                     index={i} folderName={folderName}/>
     {/each}
   </div>
 </div>

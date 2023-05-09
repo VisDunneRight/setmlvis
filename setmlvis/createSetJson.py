@@ -401,8 +401,8 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
                     gt_boxes = []
                     for line in gt_lines:
                         gt_data = line.strip().split()
-                        gt_class = gt_data[0]
-                        gt_box = [float(coord) for coord in gt_data[1:]]
+                        gt_class = ' '.join(gt_data[:-4])  # Join the first elements until the last 4 into a single string
+                        gt_box = [float(coord) for coord in gt_data[-4:]]  # Extract the last 4 elements as bounding box coordinates
                         if gt_class != filterClass:
                             gt_boxes.append((gt_class, gt_box))
                     
@@ -541,7 +541,6 @@ def getIntersection(boundingBoxArray):
     i = 1
 
     while i < len(boundingBoxArray):
-        print(boundingBoxArray)
         xL = float(boundingBoxArray[i][1])
         xR = float(boundingBoxArray[i][3])
         yT = float(boundingBoxArray[i][2])

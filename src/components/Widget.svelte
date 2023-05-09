@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {height, windowWidth, menuWidth, openDetailView} from '../stores';
+  import {height, windowWidth, menuWidth, openDetailView, dataset} from '../stores';
   import { onMount } from 'svelte';
   import Menu from './Menu.svelte'
   // import DetailView from './DetailView.svelte'
@@ -14,6 +14,10 @@
         && event.target.getAttribute('id') === 'setvis-model-container'){
           $openDetailView = false;
         }
+  }
+  let folderName='';
+  $: if($dataset['meta']){
+    folderName = $dataset['meta']['folderName'];
   }
 
   onMount(() => {
@@ -70,9 +74,9 @@
         style:width="{$windowWidth - $menuWidth}px" 
         style:left="{$menuWidth}px">
     <SetVis/>
-    <Collection/>
+    <Collection folderName={folderName}/>
   </div>
-  <DetailView/>
+  <DetailView folderName={folderName}/>
 </div>
 
 

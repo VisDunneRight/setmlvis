@@ -1,19 +1,23 @@
 
 <script lang="ts">
   import type { ImgData } from '../../types';
-  import {selectedImg, openDetailView, colorMap} from '../../stores';
+  import {selectedImg, openDetailView, colorMap, selectedImgIdx} from '../../stores';
   import {color } from '../../ulit';
   
   export let data:ImgData;
+  export let index: number;
   export let height:number;
   export let top:number;
   export let left:number;
+  export let folderName = '';
+
   $:imgWidth = data === undefined ? 0 : data.imgSize[0];
   $:imgHeight = data === undefined ? 0 : data.imgSize[1];
   $:imgRatio = imgWidth/imgHeight;
   $:width = height*imgRatio;
   function selectImgData(){
     $selectedImg = data;
+    $selectedImgIdx = index;
     $openDetailView = true;
   }
  
@@ -24,7 +28,7 @@
   >
   {#if data}
     <button on:click={()=>{selectImgData()}}>
-      <img height="{height}px" src="data/twentyFiveImages/images/{data.imgName}" alt="selected Figure"/>
+      <img height="{height}px" src="{folderName + data.imgName}" alt="selected Figure"/>
       <svg width={width} height={height}>
         {#each Object.entries(data.boxes) as [name, box]}
           <rect
