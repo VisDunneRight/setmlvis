@@ -2,7 +2,7 @@
   import Group from './menuComp/Group.svelte';
   import {fly} from 'svelte/transition';
   import {height, menuWidth, IOU, confidence, detectionSize} from '../stores';
-  import type {MenuItem, SliderType} from '../types';
+  import type {MenuItem} from '../types';
 
   import menu from '../menu.json';
   let menuOpen = true;
@@ -16,7 +16,7 @@
     }
     menuOpen = value;
   }
-  let menuMap:Record<string,MenuItem > = {};
+  let menuMap:Record<string, MenuItem > = {};
   menu.forEach((menuItem)=>{
     menuMap[menuItem.id] = menuItem;
   })
@@ -24,12 +24,15 @@
   menuMap['truePositiveIOU'].updatefunction = function(value:number){
     $IOU = value;
   }
-  menuMap['truePositiveIOU'].updatefunction = function(values:[number, number]){
+
+  menuMap['confidence'].updatefunction = function(values:[number, number]){
     $confidence = values;
   }
-  menuMap['truePositiveIOU'].updatefunction = function(values:[number, number]){
+  menuMap['detectionSize'].updatefunction = function(values:[number, number]){
     $detectionSize = values;
   }
+  //Set the starting value for the function to user passed value
+  menuMap['truePositiveIOU'].value = $IOU;
   //https://iconsvg.xyz/  
 </script>
 {#if menuOpen === true}

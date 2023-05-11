@@ -1,8 +1,8 @@
 import type { Writable } from 'svelte/store';
-import type {DOMWidgetModel} from '@jupyter-widgets/base'
+import type { DOMWidgetModel } from '@jupyter-widgets/base';
 
 import { writable } from 'svelte/store';
-import type { Data, ImgData, StringNumMap } from './types'
+import type { Data, ImgData, StringNumMap } from './types';
 
 // //boilerplate code that will be ignored for now
 // interface WidgetWritable<T> extends Writable<T> {
@@ -87,23 +87,34 @@ export let dataset: Writable<Data>;
 export let selectedCol: Writable<ImgData[]>;
 export let num_instances: Writable<number>;
 export let height: Writable<number>;
-export let IOU:Writable<number>;
+export let IOU: Writable<number>;
 
 // Stores that are not synced with traitlets
 export let windowWidth: Writable<number>;
 export let menuWidth: Writable<number>;
-export let selectedImg:Writable<ImgData>
-export let selectedImgIdx:Writable<number>
+export let selectedImg: Writable<ImgData | undefined>;
+export let selectedImgIdx: Writable<number>;
 export let openDetailView: Writable<boolean>;
 export let colorMap: Writable<StringNumMap>;
-export let confidence:Writable<[number, number]>;
-export let detectionSize:Writable<[number, number]>;
+export let confidence: Writable<[number, number]>;
+export let detectionSize: Writable<[number, number]>;
 
 // Set the model for each store you create.
 export function setStoreModels(model: DOMWidgetModel): void {
   //Stores that are synced with python
 
-  dataset = createSyncedWidget<Data>('dataset', {}, model);
+  dataset = createSyncedWidget<Data>(
+    'dataset',
+    {
+      meta: {
+        folderName: '',
+        modelNames: [],
+        SetIOU: 0.8,
+      },
+      models: {},
+    },
+    model
+  );
   selectedCol = createSyncedWidget<ImgData[]>('selectedCol', [], model);
   num_instances = createSyncedWidget<number>('num_instances', 0, model);
   height = createSyncedWidget<number>('height', 600, model);
@@ -115,6 +126,6 @@ export function setStoreModels(model: DOMWidgetModel): void {
   selectedImgIdx = writable(-1);
   openDetailView = writable(false);
   colorMap = writable<StringNumMap>({});
-  confidence = writable<[number, number]>([0, 1.0])
-  detectionSize = writable<[number, number]>([0, 1.0])
+  confidence = writable<[number, number]>([0, 1.0]);
+  detectionSize = writable<[number, number]>([0, 1.0]);
 }

@@ -51,12 +51,14 @@ def generateMetadata(folderName, dictionary, modelNames, setIOU):
         dict: The dictionary object with metadata added.
 
     """
-    dictionary['meta'] = {
+    newDict = {}
+    newDict['meta'] = {
         'folderName': folderName + 'images/',
         'modelNames': modelNames,
         'setIOU': setIOU
     }
-    return dictionary
+    newDict['models'] = dictionary
+    return newDict
 
 
 def getModelNames(directory: str) -> list[str]:
@@ -209,20 +211,19 @@ def getEachImageInformation(folderName, imageName, inp, iouAlgos, modelNames, fi
 
         for subset in itertools.combinations(modelNames, L):
             if len(subset) != 0:
-                dictionary, inp, previous_gt_shapes = getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, ground_truth_boxes, previous_gt_shapes, used_gt_by_image)
+                dictionary, falseNegatives, inp, previous_gt_shapes = getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, ground_truth_boxes, previous_gt_shapes, used_gt_by_image)
 
                 stringTotal = ""
                 for s in subset:
                     stringTotal = stringTotal + s + ','
                 for key, dictionaryItem in dictionary.items():
-                    if key != 'FN':
-                        for model_name, box in dictionaryItem['boxes'].items():
+                    for model_name, box in dictionaryItem['boxes'].items():
 
-                            box_key = model_name
-                            box_value = box
-                            removeItems.append(box_value)
-                            if 'gtShape' in dictionaryItem:
-                                ground_truth_boxes[model_name].append(dictionaryItem['gtShape'])
+                        box_key = model_name
+                        box_value = box
+                        removeItems.append(box_value)
+                        if 'gtShape' in dictionaryItem:
+                            ground_truth_boxes[model_name].append(dictionaryItem['gtShape'])
 
                 # Update the used_gt_by_image dictionary
                 for model_name in subset:
@@ -231,7 +232,7 @@ def getEachImageInformation(folderName, imageName, inp, iouAlgos, modelNames, fi
                             used_gt_by_image[imageName] = []
                         used_gt_by_image[imageName].append(box)
 
-                bigDict[stringTotal] = dictionary
+                bigDict[stringTotal] = {"detections":dictionary, "FN":falseNegatives}
 
     return bigDict
 
@@ -368,62 +369,60 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
                 item['gtShape'] = gt['gtShape']
 
     falseNegatives = findFalseNegatives(gtArray, filtered_list)
-    dictionary['FN'] = falseNegatives
 
      # Add these lines to initialize the false positive categories
 
 
     for key, item in dictionary.items():
-        if 'FN' not in key:  # Check the key instead of the item
-            if item['iouGT'] == 0.0:
-                duplicate_detected = False
-                # Case 1: Duplicate detection on the same object
-                if imageName in used_gt_by_image:
-                    for used_gt in used_gt_by_image[imageName]:
-                        intersection = getIntersection([item['shape'], used_gt])
-                        union = getUnion([item['shape'], used_gt])
-                        IOU = intersection.area / union.area
-                        if IOU > 0:  # Replace iou_threshold with a suitable value
-                            item['category'] = 'duplicate'  # Add category information
-                            duplicate_detected = True
-                            break
-                       
-
-                if not duplicate_detected:
-                    # Case 2: Wrong class detection
-                    
-                    item['category'] = 'wrong_class'  # Add category information
-                    gt_txt_file = folderName + 'ground_truth/' + imageName.replace('.jpg', '.txt').replace('.jpeg', '.txt').replace('.png', '.txt')
-                    with open(gt_txt_file, 'r') as f:
-                        gt_lines = f.readlines()
-                        
-
-                    gt_boxes = []
-                    for line in gt_lines:
-                        gt_data = line.strip().split()
-                        gt_class = ' '.join(gt_data[:-4])  # Join the first elements until the last 4 into a single string
-                        gt_box = [float(coord) for coord in gt_data[-4:]]  # Extract the last 4 elements as bounding box coordinates
-                        if gt_class != filterClass:
-                            gt_boxes.append((gt_class, gt_box))
+        if item['iouGT'] == 0.0:
+            duplicate_detected = False
+            # Case 1: Duplicate detection on the same object
+            if imageName in used_gt_by_image:
+                for used_gt in used_gt_by_image[imageName]:
+                    intersection = getIntersection([item['shape'], used_gt])
+                    union = getUnion([item['shape'], used_gt])
+                    IOU = intersection.area / union.area
+                    if IOU > 0:  # Replace iou_threshold with a suitable value
+                        item['category'] = 'duplicate'  # Add category information
+                        duplicate_detected = True
+                        break
                     
 
-                    for gt_class, gt_box in gt_boxes:
+            if not duplicate_detected:
+                # Case 2: Wrong class detection
+                
+                item['category'] = 'wrong_class'  # Add category information
+                gt_txt_file = folderName + 'ground_truth/' + imageName.replace('.jpg', '.txt').replace('.jpeg', '.txt').replace('.png', '.txt')
+                with open(gt_txt_file, 'r') as f:
+                    gt_lines = f.readlines()
+                    
 
-                        value = [item['shape'], [gt_class]+gt_box]
-                        
-                        intersection = getIntersection(value)
-                        if intersection.area == 0:
-                            continue
-                   
-                        union = getUnion(value)
-                        IOU  = intersection.area / union.area
-                        if IOU >= 0.5:  # The IOU threshold for checking overlaps
-                            item['category'] = 'wrong_class'
-                            break
-                    else:
-                        item['category'] = 'far_away'  # Add category information
-            else:
-                item['category'] = 'normal'  # Add category information for normal detections
+                gt_boxes = []
+                for line in gt_lines:
+                    gt_data = line.strip().split()
+                    gt_class = ' '.join(gt_data[:-4])  # Join the first elements until the last 4 into a single string
+                    gt_box = [float(coord) for coord in gt_data[-4:]]  # Extract the last 4 elements as bounding box coordinates
+                    if gt_class != filterClass:
+                        gt_boxes.append((gt_class, gt_box))
+                
+
+                for gt_class, gt_box in gt_boxes:
+
+                    value = [item['shape'], [gt_class]+gt_box]
+                    
+                    intersection = getIntersection(value)
+                    if intersection.area == 0:
+                        continue
+                
+                    union = getUnion(value)
+                    IOU  = intersection.area / union.area
+                    if IOU >= 0.5:  # The IOU threshold for checking overlaps
+                        item['category'] = 'wrong_class'
+                        break
+                else:
+                    item['category'] = 'far_away'  # Add category information
+        else:
+            item['category'] = 'normal'  # Add category information for normal detections
 
 
     # # Add these lines to store false positive categories in the dictionary
@@ -433,7 +432,7 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
     for key, value in dictionary.items():
         if 'gtShape' in value and value['iouGT'] > 0.0:
             previous_gt_shapes.add(tuple(value['gtShape']))
-    return dictionary, inp, previous_gt_shapes
+    return dictionary, falseNegatives, inp, previous_gt_shapes
         
  
 

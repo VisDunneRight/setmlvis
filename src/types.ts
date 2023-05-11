@@ -1,7 +1,15 @@
 //Shared file that contains all types used in the work
 
-export type Data = Record<string, Array<DataRes> >
-export type DataRes = {'FN': FN} & Record<string, ImgData>
+export type Data = {
+  meta: Meta,
+  models:Models
+}
+export type Models = Record<string, Array<DataRes> >
+
+export type DataRes = {
+  detections:Record<string, ImgData>,
+  FN: FN,
+}
 
 export type ImgInfo = {
   height: number,
@@ -10,9 +18,13 @@ export type ImgInfo = {
   data: ImgData
 }
 
-export type StringNumMap = {
-  [index:string] : number;
+export type Meta = {
+  folderName: string,
+  modelNames:Array<string>,
+  SetIOU: number
 }
+export type StringNumMap = Record<string, number>
+
 
 export type ImgData = {
   IOU:number,
@@ -23,9 +35,9 @@ export type ImgData = {
   imgSize:[number, number],
   iouGT:number,
   shape:[number, number, number, number]
-} | undefined
+} 
 
-export type MenuItem =  ButtonItem | SliderType | DoubleSliderType;
+export type MenuItem =  SliderType | DoubleSliderType;
 
 export type ButtonItem = {
   id:string,
