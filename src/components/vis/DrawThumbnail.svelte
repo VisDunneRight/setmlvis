@@ -5,8 +5,9 @@
     openDetailView,
     colorMap,
     selectedImgIdx,
+    breakdown
   } from '../../stores';
-  import { color } from '../../ulit';
+  import { color, colorTypes } from '../../ulit';
 
   export let data: ImgData;
   export let index: number;
@@ -24,11 +25,12 @@
     $selectedImgIdx = index;
     $openDetailView = true;
   }
+  $:console.log($breakdown);
 </script>
 
 <div
   class="media-element"
-  style="width:{width}px;height:{height}px;left:{left}px;top:{top}px"
+  style="width:{width}px;height:{height}px;left:{left}px;top:{top}px;{$breakdown ? 'border:3px ridge ' + colorTypes[data.category]+';': ''}"
 >
   {#if data}
     <button
@@ -49,8 +51,8 @@
             width={(box[3] - box[1]) * width}
             height={((box[4] - box[2]) * width) / imgRatio}
             fill="none"
-            stroke={color[colorMap[name]]}
-            
+            stroke={color[$colorMap[name]]}
+            stroke-width="2"
           />
         {/each}
         {#if data.iouGT > 0}

@@ -23,8 +23,8 @@ export type Meta = {
   modelNames:Array<string>,
   SetIOU: number
 }
-export type StringNumMap = Record<string, number>
 
+export type StringNumMap = Record<string, number>
 
 export type ImgData = {
   IOU:number,
@@ -33,6 +33,7 @@ export type ImgData = {
   gtShape:FN,
   imgName:string,
   imgSize:[number, number],
+  category:string,
   iouGT:number,
   shape:[number, number, number, number]
 } 

@@ -95,6 +95,7 @@ export let menuWidth: Writable<number>;
 export let selectedImg: Writable<ImgData | undefined>;
 export let selectedImgIdx: Writable<number>;
 export let openDetailView: Writable<boolean>;
+export let breakdown: Writable<boolean>;
 export let colorMap: Writable<StringNumMap>;
 export let confidence: Writable<[number, number]>;
 export let detectionSize: Writable<[number, number]>;
@@ -125,6 +126,7 @@ export function setStoreModels(model: DOMWidgetModel): void {
   selectedImg = writable(undefined);
   selectedImgIdx = writable(-1);
   openDetailView = writable(false);
+  breakdown = writable(false);
   colorMap = writable<StringNumMap>({});
   confidence = writable<[number, number]>([0, 1.0]);
   detectionSize = writable<[number, number]>([0, 1.0]);

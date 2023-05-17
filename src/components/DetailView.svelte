@@ -7,6 +7,7 @@
     openDetailView,
     selectedCol,
   } from '../stores';
+
   import DrawTextbox from './vis/DrawTextbox.svelte';
   import { colorMap } from '../stores';
   import { color } from '../ulit';
@@ -134,7 +135,7 @@
                     <DrawTextbox
                       x={box[1] * newImg.width}
                       y={box[2] * newImg.height}
-                      backgroundColor={color[colorMap[name]]}
+                      backgroundColor={color[$colorMap[name]]}
                       textColor="white"
                       size={13}
                       text={showConfidence(box[0], box[5])}
@@ -145,7 +146,7 @@
                       width={(box[3] - box[1]) * newImg.width}
                       height={(box[4] - box[2]) * newImg.height}
                       fill="none"
-                      stroke={color[colorMap[name]]}
+                      stroke={color[$colorMap[name]]}
                     />
                   {/each}
                 </svg>
@@ -180,6 +181,7 @@
     flex-shrink: 0;
     background-color: blue;
   }
+
   .model-img {
     position: relative;
     display: flex;
@@ -187,6 +189,7 @@
     justify-content: center;
     flex-grow: 1;
   }
+
   .model-arrow-prev {
     cursor: pointer;
     position: absolute;
@@ -205,6 +208,7 @@
     opacity: 0.6;
     transition: box-shadow 0.15s ease-in-out 0s;
   }
+
   .model-arrow-next {
     cursor: pointer;
     position: absolute;

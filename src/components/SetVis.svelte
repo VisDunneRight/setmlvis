@@ -7,10 +7,14 @@
     selectedCol,
     colorMap,
     confidence,
+    breakdown
   } from '../stores';
   import type { DataRes, ImgData, Data } from '../types';
-  import { color } from '../ulit';
+  import { color, colorTypes } from '../ulit';
   import SetColumn from './vis/setColumn.svelte';
+  import { onMount } from 'svelte';
+  import VisButton from './vis/VisButton.svelte';
+  import ColorLegend from './vis/ColorLegend.svelte';
 
   $: mouseOverI = -1;
   $: colSelected = -1;
@@ -28,8 +32,8 @@
   let setFliter: Array<number> = [];
   let setData: Array<ColumnType> = [];
 
-  $: metaModel.forEach((model: string, i: number) => {
-    colorMap[model] = i % color.length;
+  metaModel.forEach((model: string, i: number) => {
+    $colorMap[model] = i % color.length;
     setFliter.push(1);
   });
 
@@ -42,6 +46,12 @@
     modelRange: Array<number>;
     truePos: number;
     falsePos: number;
+    type: {
+      duplicate: number;
+      normal: number;
+      far_away: number;
+      wrong_class: number;
+    };
     data: DataRes[];
   };
 
@@ -92,7 +102,7 @@
       metaModel.forEach((model: string, ind: number) => {
         const nameArry = name.split(',');
         if (modelExists(nameArry, model)) {
-          models.push(1);
+          models.push(2);
           modelRange.push(ind);
         } else {
           models.push(0);
@@ -104,6 +114,12 @@
         modelRange: modelRange,
         truePos: 0,
         falsePos: 0,
+        type: {
+          duplicate: 0,
+          normal: 0,
+          far_away: 0,
+          wrong_class: 0,
+        },
         data: arryList,
       };
       //determine the number of postives
@@ -113,6 +129,7 @@
             column['truePos'] += 1;
           } else {
             column['falsePos'] += 1;
+            column.type[info.category] += 1;
           }
         });
       });
@@ -192,9 +209,35 @@
     barSelected = type;
     $selectedCol = selection;
   }
+  function clearSet() {
+    setData = [];
+  }
 
   function selectSet() {
     setData = [];
+    let setRange:Array<number> = [];
+    setFliter.forEach((name, ind)=>{
+      if(name > 0){
+        setRange.push(ind)
+      }
+    })
+
+    let column: ColumnType = {
+      name: 'Group',
+      models: setFliter,
+      modelRange: setRange,
+      truePos: 0,
+      falsePos: 0,
+      type: {
+        duplicate: 0,
+        normal: 0,
+        far_away: 0,
+        wrong_class: 0,
+      },
+      data: [],
+    };
+    setData.push(column);
+
     data.forEach((ele) => {
       const nameArry = ele.name.split(',');
       let match = true;
@@ -214,6 +257,14 @@
       });
       if (match) {
         setData.push(ele);
+        ele.data.forEach((item)=>{
+          setData[0].data.push(item);
+        });
+        setData[0].falsePos += ele.falsePos;
+        setData[0].truePos += ele.truePos;
+        for (const [key, value] of Object.entries(ele.type)) {
+          setData[0].type[key] += value;
+        }
       }
     });
   }
@@ -221,10 +272,20 @@
   function updateSetFilters(idx: number, value: number) {
     setFliter[idx] = value;
   }
+  let setVis: SVGSVGElement;
+  onMount(async () => {
+    // var panZoomTiger = svgPanZoom(setVis);
+    //   var svgElement = document.querySelector('#setvis');
+    //   console.log('This:', svgElement);
+    //   var panZoomTiger = svgPanZoom('#setvis');
+    //   console.log('This:', panZoomTiger);
+  });
+
+  // var panZoomTiger = svgPanZoom(svgElement);
 </script>
 
 <div class="set-vis-container" style:width="100%" style:height="{winHeight}px">
-  <svg width="100%" height={winHeight} class="svg-container">
+  <svg width="100%" height={winHeight} class="svg-container" bind:this={setVis}>
     <g class="model-names">
       {#each metaModel as modelName, i}
         <rect
@@ -232,7 +293,7 @@
           y={modelRow(i) - config.circleRadius}
           width={config.maxTextSize}
           height={config.circleRadius * 2}
-          fill={color[colorMap[modelName]]}
+          fill={color[$colorMap[modelName]]}
           opacity=".25"
         />
         <text
@@ -296,26 +357,76 @@
         stroke-linecap="round"
         stroke="#9e9e9e"
       />
-      <g on:mousedown={() => selectSet()} class="pointer">
-        <rect
-          x={setSpacing(0) - config.circleRadius}
-          y={modelRow(metaModel.length - 1) - 40}
-          width={setSpacing(2) -
-            setSpacing(0) +
-            config.circleRadius +
-            2 * config.colGap}
-          height={20}
-          rx={4}
-          fill="#bdbdbd"
-        />
+      <VisButton
+        x={setSpacing(1) - config.circleRadius}
+        y={modelRow(metaModel.length - 1) - 25}
+        update={selectSet}
+        text={'Confirm'}
+      />
+
+      <VisButton
+        x={setSpacing(-1) - config.circleRadius}
+        y={modelRow(metaModel.length - 1) - 25}
+        update={clearSet}
+        text={'X'}
+      />
+    </g>
+    <g class="color-legend">
+      <g>
+        <g transform='translate(2 14)'>
+          <svg
+            fill="#000000"
+            height="10px"
+            width="10px"
+            version="1.1"
+            id="Capa_1"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+            viewBox="0 0 490 490"
+            xml:space="preserve"
+            ><g id="SVGRepo_iconCarrier" transform='{breakdown ? 'rotate(90 250 250)': ''}'>
+                <path d="M15.541,490V0l458.917,245.009L15.541,490z" />
+            </g></svg
+          >
+        </g>
         <text
-          x={setSpacing(0) - config.circleRadius + 4}
-          y={modelRow(metaModel.length - 1) - 30}
+          x={16}
+          y={20}
           text-anchor="start"
           alignment-baseline="middle"
-          class="model-text">Confirm</text
+          font-weight="bold"
+          on:mousedown={() => {
+            $breakdown = !$breakdown;
+          }}
+          class="model-text pointer">{'Breakdown'}</text
         >
       </g>
+      {#if $breakdown}
+        <ColorLegend
+          x={20}
+          y={20 + 1 * 15}
+          color={colorTypes['normal']}
+          name={'Normal'}
+        />
+        <ColorLegend
+          x={20}
+          y={20 + 2 * 15}
+          color={colorTypes['wrong_class']}
+          name={'Wrong Class'}
+        />
+        <ColorLegend
+          x={20}
+          y={20 + 3 * 15}
+          color={colorTypes['far_away']}
+          name={'Far Away'}
+        />
+        <ColorLegend
+          x={20}
+          y={20 + 4 * 15}
+          color={colorTypes['duplicate']}
+          name={'Duplicate'}
+        />
+      {/if}
     </g>
     <g class="y-axis">
       <text
@@ -366,29 +477,30 @@
           {selectModel}
           {colSelected}
           {barSelected}
+          breakdown={$breakdown}
         />
       </g>
     {/each}
-  {#if setData.length > 0}
-    <line
-      x1={columnSpacing(setData.length)}
-      y1={modelRow(0) + config.circleRadius}
-      x2={columnSpacing(setData.length)}
-      y2={modelRow(metaModel.length - 1) - config.circleRadius}
-      stroke-width="4"
-      stroke-linecap="round"
-      stroke="#9e9e9e"
-    />
-  {/if}
+    {#if setData.length > 0}
+      <line
+        x1={columnSpacing(setData.length)}
+        y1={modelRow(0) + config.circleRadius}
+        x2={columnSpacing(setData.length)}
+        y2={modelRow(metaModel.length - 1) - config.circleRadius}
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke="#9e9e9e"
+      />
+    {/if}
 
     {#each data as col, i}
       <g
         class="column"
         on:mouseover={() => {
-          mouseOverI = i + (setData.length > 0 ? setData.length + 1: 0);
+          mouseOverI = i + (setData.length > 0 ? setData.length + 1 : 0);
         }}
         on:focus={() => {
-          mouseOverI = i +(setData.length > 0 ? setData.length + 1: 0);
+          mouseOverI = i + (setData.length > 0 ? setData.length + 1 : 0);
         }}
         on:mouseout={() => {
           mouseOverI = -1;
@@ -396,11 +508,13 @@
         on:blur={() => {
           mouseOverI = -1;
         }}
-        transform="translate({columnSpacing(i + (setData.length > 0 ? setData.length + 1: 0)) - config.circleRadius}, {0})"
+        transform="translate({columnSpacing(
+          i + (setData.length > 0 ? setData.length + 1 : 0)
+        ) - config.circleRadius}, {0})"
       >
         <SetColumn
           {col}
-          i = {i + (setData.length > 0 ? setData.length + 1: 0)}
+          i={i + (setData.length > 0 ? setData.length + 1 : 0)}
           {config}
           {mouseOverI}
           {winHeight}
@@ -408,8 +522,10 @@
           {modelRow}
           {y}
           {selectModel}
-          colSelected = {colSelected + (setData.length > 0 ? setData.length + 1: 0)}
+          colSelected={colSelected +
+            (setData.length > 0 ? setData.length + 1 : 0)}
           {barSelected}
+          breakdown={$breakdown}
         />
       </g>
     {/each}

@@ -75,7 +75,7 @@
 </script>
 
 <div class="collection-container" style:width="100%" style:height="40%">
-  <div class="media-scroller">
+  <div class="media-scroller" id ="scrollBar">
     {#each imgInfo as img, i}
       <DrawThumbnail
         left={img.left}
@@ -97,6 +97,26 @@
     overflow-y: auto;
     overflow-x: hidden;
   }
+
+/* #scrollBar::-webkit-scrollbar-track
+{
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+	border-radius: 5px;
+	background-color: #F5F5F5;
+}
+
+#scrollBar::-webkit-scrollbar
+{
+	width: 8px;
+	background-color: #F5F5F5;
+}
+
+#scrollBar::-webkit-scrollbar-thumb
+{
+	border-radius: 5px;
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+	background-color: #555;
+} */
 
   .collection-container {
     position: absolute;
