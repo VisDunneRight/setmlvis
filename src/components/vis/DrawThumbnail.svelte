@@ -25,7 +25,7 @@
     $selectedImgIdx = index;
     $openDetailView = true;
   }
-  $:console.log($breakdown);
+  
 </script>
 
 <div

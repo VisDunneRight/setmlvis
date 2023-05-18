@@ -13,6 +13,7 @@
   export let colSelected;
   export let barSelected;
   export let breakdown;
+  // if(col.truePos + col.false_pos > )
 
   let duplicate = col.truePos + col.type.duplicate;
   let far_away = duplicate + col.type.far_away;

@@ -83,12 +83,12 @@
       avg <= confid[1]
     ) {
       if (info !== undefined && info.iouGT >= iou) {
-        return true;
+        return 2;
       } else {
-        return false;
+        return 1;
       }
     } else {
-      return false;
+      return 0;
     }
   }
 
@@ -125,9 +125,10 @@
       //determine the number of postives
       arryList.forEach((obj) => {
         Object.entries(obj.detections).forEach(([type, info]) => {
-          if (determinePostivity(info, confid, iou)) {
+          let positivity = determinePostivity(info, confid, iou);
+          if (positivity === 2) {
             column['truePos'] += 1;
-          } else {
+          } else if(positivity === 1) {
             column['falsePos'] += 1;
             column.type[info.category] += 1;
           }
@@ -152,6 +153,7 @@
   $: step = Math.ceil((extentY[1] - extentY[0]) / config.ytickCount / 5) * 5;
 
   function updateTicks(extentY: number[]) {
+    yTicks = [];
     for (let i = 0; i <= config.ytickCount; i++) {
       yTicks.push(i * step + extentY[0]);
     }
@@ -191,7 +193,7 @@
     if (type === 'true positive') {
       model.data.forEach((obj) => {
         Object.entries(obj.detections).forEach(([type, info]) => {
-          if (determinePostivity(info, $confidence, $IOU)) {
+          if (determinePostivity(info, $confidence, $IOU) === 2) {
             selection.push(info);
           }
         });
@@ -199,7 +201,7 @@
     } else if (type === 'false positive') {
       model.data.forEach((obj) => {
         Object.entries(obj.detections).forEach(([type, info]) => {
-          if (!determinePostivity(info, $confidence, $IOU)) {
+          if (determinePostivity(info, $confidence, $IOU) === 1) {
             selection.push(info);
           }
         });
@@ -373,7 +375,7 @@
     </g>
     <g class="color-legend">
       <g>
-        <g transform='translate(2 14)'>
+        <g transform='translate(2 36)'>
           <svg
             fill="#000000"
             height="10px"
@@ -384,14 +386,14 @@
             xmlns:xlink="http://www.w3.org/1999/xlink"
             viewBox="0 0 490 490"
             xml:space="preserve"
-            ><g id="SVGRepo_iconCarrier" transform='{breakdown ? 'rotate(90 250 250)': ''}'>
+            ><g id="SVGRepo_iconCarrier" transform='{$breakdown ? 'rotate(90 250 250)': ''}'>
                 <path d="M15.541,490V0l458.917,245.009L15.541,490z" />
             </g></svg
           >
         </g>
         <text
           x={16}
-          y={20}
+          y={42}
           text-anchor="start"
           alignment-baseline="middle"
           font-weight="bold"
@@ -404,25 +406,25 @@
       {#if $breakdown}
         <ColorLegend
           x={20}
-          y={20 + 1 * 15}
+          y={42 + 1 * 15}
           color={colorTypes['normal']}
           name={'Normal'}
         />
         <ColorLegend
           x={20}
-          y={20 + 2 * 15}
+          y={42 + 2 * 15}
           color={colorTypes['wrong_class']}
           name={'Wrong Class'}
         />
         <ColorLegend
           x={20}
-          y={20 + 3 * 15}
+          y={42 + 3 * 15}
           color={colorTypes['far_away']}
           name={'Far Away'}
         />
         <ColorLegend
           x={20}
-          y={20 + 4 * 15}
+          y={42 + 4 * 15}
           color={colorTypes['duplicate']}
           name={'Duplicate'}
         />
