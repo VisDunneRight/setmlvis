@@ -7,20 +7,22 @@
     selectedCol,
     colorMap,
     confidence,
-    breakdown
+    breakdown,
+    windowWidth,
+    menuWidth
   } from '../stores';
   import type { DataRes, ImgData, Data } from '../types';
   import { color, colorTypes } from '../ulit';
   import SetColumn from './vis/setColumn.svelte';
-  import { onMount } from 'svelte';
   import VisButton from './vis/VisButton.svelte';
   import ColorLegend from './vis/ColorLegend.svelte';
+  import Tooltip from './vis/Tooltip.svelte';
 
   $: mouseOverI = -1;
   $: colSelected = -1;
   $: barSelected = '';
   const metaModel = $dataset['meta']['modelNames'];
-  const padding = { top: 20, right: 15, bottom: 20, left: 10 };
+  const padding = { top: 20, right: 15, bottom: 22, left: 10 };
   const config = {
     colGap: 3,
     maxTextSize: 120,
@@ -92,9 +94,13 @@
     }
   }
 
-  function updateData(dset: Data, iou: number, confid: [number, number]) {
+  function updateData(
+    dset: Data,
+    iou: number,
+    confid: [number, number],
+    breakdown: boolean
+  ) {
     let data: Array<ColumnType> = [];
-
     Object.entries(dset.models).forEach(([name, arryList]) => {
       //Generates Circle information
       let models: Array<number> = [];
@@ -128,7 +134,7 @@
           let positivity = determinePostivity(info, confid, iou);
           if (positivity === 2) {
             column['truePos'] += 1;
-          } else if(positivity === 1) {
+          } else if (positivity === 1) {
             column['falsePos'] += 1;
             column.type[info.category] += 1;
           }
@@ -136,10 +142,11 @@
       });
       data.push(column);
     });
+    console.log(data);
     return data;
   }
 
-  $: data = updateData($dataset, $IOU, $confidence);
+  $: data = updateData($dataset, $IOU, $confidence, $breakdown);
 
   $: maxY = d3.max(data, (d) => d.truePos + d.falsePos);
   $: extentY = [0, maxY === undefined ? 100 : maxY];
@@ -162,14 +169,7 @@
 
   //Helper functions
   function columnSpacing(i: number) {
-    return (
-      padding.left +
-      config.maxTextSize +
-      config.colGap +
-      config.circleRadius +
-      config.setSpacing +
-      i * (config.colGap + config.circleRadius * 2)
-    );
+    return padding.left + i * (config.colGap + config.circleRadius * 2);
   }
   function modelRow(j: number) {
     return (
@@ -217,12 +217,12 @@
 
   function selectSet() {
     setData = [];
-    let setRange:Array<number> = [];
-    setFliter.forEach((name, ind)=>{
-      if(name > 0){
-        setRange.push(ind)
+    let setRange: Array<number> = [];
+    setFliter.forEach((name, ind) => {
+      if (name > 0) {
+        setRange.push(ind);
       }
-    })
+    });
 
     let column: ColumnType = {
       name: 'Group',
@@ -259,7 +259,7 @@
       });
       if (match) {
         setData.push(ele);
-        ele.data.forEach((item)=>{
+        ele.data.forEach((item) => {
           setData[0].data.push(item);
         });
         setData[0].falsePos += ele.falsePos;
@@ -274,169 +274,204 @@
   function updateSetFilters(idx: number, value: number) {
     setFliter[idx] = value;
   }
-  let setVis: SVGSVGElement;
-  onMount(async () => {
-    // var panZoomTiger = svgPanZoom(setVis);
-    //   var svgElement = document.querySelector('#setvis');
-    //   console.log('This:', svgElement);
-    //   var panZoomTiger = svgPanZoom('#setvis');
-    //   console.log('This:', panZoomTiger);
-  });
 
-  // var panZoomTiger = svgPanZoom(svgElement);
+  $: svgWidth = columnSpacing(setData.length + 1 + data.length);
+
+  let evt: CustomEvent<any>;
+  let hideTooltip = true;
+  const leftPanelWidth =
+    config.maxTextSize +
+    config.colGap +
+    config.circleRadius +
+    config.setSpacing;
+
 </script>
 
-<div class="set-vis-container" style:width="100%" style:height="{winHeight}px">
-  <svg width="100%" height={winHeight} class="svg-container" bind:this={setVis}>
-    <g class="model-names">
-      {#each metaModel as modelName, i}
-        <rect
-          x={padding.left}
-          y={modelRow(i) - config.circleRadius}
-          width={config.maxTextSize}
-          height={config.circleRadius * 2}
-          fill={color[$colorMap[modelName]]}
-          opacity=".25"
-        />
-        <text
-          x={padding.left + config.maxTextSize - config.colGap}
-          y={modelRow(i)}
-          text-anchor="end"
-          alignment-baseline="middle"
-          class="model-text"
-          >{modelName.length * 7 < config.maxTextSize
-            ? modelName
-            : modelName.slice(0, config.maxTextSize / 7) + '...'}</text
-        >
-        <circle
-          cx={setSpacing(0)}
-          cy={modelRow(i)}
-          r={config.circleRadius}
-          fill={'#f0f0f0'}
-          stroke={setFliter[i] === 0 ? '#757de8' : '#636363'}
-          stroke-width={setFliter[i] === 0 ? '4px' : '2px'}
-          on:mousedown={() => updateSetFilters(i, 0)}
-        />
-        <g on:mousedown={() => updateSetFilters(i, 1)}>
+  <div class="set-vis-container" style:width="100%" style:height="{winHeight}px">
+    <div class="left-panel">
+    <svg
+      style:width="{leftPanelWidth}px"
+      style:height="{winHeight}px"
+      style="Max-Width:{leftPanelWidth}px"
+      class="svg-container"
+    >
+      <g class="model-names">
+        {#each metaModel as modelName, i}
+          <rect
+            x={padding.left}
+            y={modelRow(i) - config.circleRadius}
+            width={config.maxTextSize}
+            height={config.circleRadius * 2}
+            fill={color[$colorMap[modelName]]}
+            opacity=".25"
+          />
+          <text
+            x={padding.left + config.maxTextSize - config.colGap}
+            y={modelRow(i)}
+            text-anchor="end"
+            alignment-baseline="middle"
+            class="model-text"
+            >{modelName.length * 7 < config.maxTextSize
+              ? modelName
+              : modelName.slice(0, config.maxTextSize / 7) + '...'}</text
+          >
           <circle
-            cx={setSpacing(1)}
+            cx={setSpacing(0)}
             cy={modelRow(i)}
-            r={config.circleRadius - 1}
+            r={config.circleRadius}
             fill={'#f0f0f0'}
+            stroke={setFliter[i] === 0 ? '#757de8' : '#636363'}
+            stroke-width={setFliter[i] === 0 ? '4px' : '2px'}
+            on:mousedown={() => updateSetFilters(i, 0)}
           />
-          <path
-            d="M {setSpacing(1)} {modelRow(i) + config.circleRadius}
-                   a{config.circleRadius - 1}, {config.circleRadius - 1} 
-                   0 0,0 0,
-                   {-config.circleRadius * 2}"
-            fill={'#636363'}
-          />
+          <g on:mousedown={() => updateSetFilters(i, 1)}>
+            <circle
+              cx={setSpacing(1)}
+              cy={modelRow(i)}
+              r={config.circleRadius - 1}
+              fill={'#f0f0f0'}
+            />
+            <path
+              d="M {setSpacing(1)} {modelRow(i) + config.circleRadius}
+                    a{config.circleRadius - 1}, {config.circleRadius - 1} 
+                    0 0,0 0,
+                    {-config.circleRadius * 2}"
+              fill={'#636363'}
+            />
+            <circle
+              cx={setSpacing(1)}
+              cy={modelRow(i)}
+              r={config.circleRadius - 1}
+              fill="none"
+              stroke={setFliter[i] === 1 ? '#757de8' : '#636363'}
+              stroke-width={setFliter[i] === 1 ? '4px' : '2px'}
+            />
+          </g>
           <circle
-            cx={setSpacing(1)}
+            cx={setSpacing(2)}
             cy={modelRow(i)}
             r={config.circleRadius - 1}
-            fill="none"
-            stroke={setFliter[i] === 1 ? '#757de8' : '#636363'}
-            stroke-width={setFliter[i] === 1 ? '4px' : '2px'}
+            fill={'#636363'}
+            stroke={setFliter[i] === 2 ? '#757de8' : '#636363'}
+            stroke-width={setFliter[i] === 2 ? '4px' : '2px'}
+            on:mousedown={() => updateSetFilters(i, 2)}
           />
-        </g>
-        <circle
-          cx={setSpacing(2)}
-          cy={modelRow(i)}
-          r={config.circleRadius - 1}
-          fill={'#636363'}
-          stroke={setFliter[i] === 2 ? '#757de8' : '#636363'}
-          stroke-width={setFliter[i] === 2 ? '4px' : '2px'}
-          on:mousedown={() => updateSetFilters(i, 2)}
+        {/each}
+        <line
+          x1={setSpacing(3) - config.colGap}
+          y1={modelRow(0) + config.circleRadius}
+          x2={setSpacing(3) - config.colGap}
+          y2={modelRow(metaModel.length - 1) - config.circleRadius}
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke="#9e9e9e"
         />
-      {/each}
-      <line
-        x1={setSpacing(3) - config.colGap}
-        y1={modelRow(0) + config.circleRadius}
-        x2={setSpacing(3) - config.colGap}
-        y2={modelRow(metaModel.length - 1) - config.circleRadius}
-        stroke-width="4"
-        stroke-linecap="round"
-        stroke="#9e9e9e"
-      />
-      <VisButton
-        x={setSpacing(1) - config.circleRadius}
-        y={modelRow(metaModel.length - 1) - 25}
-        update={selectSet}
-        text={'Confirm'}
-      />
+        <VisButton
+          x={setSpacing(1) - config.circleRadius}
+          y={modelRow(metaModel.length - 1) - 25}
+          update={selectSet}
+          text={'Confirm'}
+        />
 
-      <VisButton
-        x={setSpacing(-1) - config.circleRadius}
-        y={modelRow(metaModel.length - 1) - 25}
-        update={clearSet}
-        text={'X'}
-      />
-    </g>
-    <g class="color-legend">
-      <g>
-        <g transform='translate(2 36)'>
-          <svg
-            fill="#000000"
-            height="10px"
-            width="10px"
-            version="1.1"
-            id="Capa_1"
-            xmlns="http://www.w3.org/2000/svg"
-            xmlns:xlink="http://www.w3.org/1999/xlink"
-            viewBox="0 0 490 490"
-            xml:space="preserve"
-            ><g id="SVGRepo_iconCarrier" transform='{$breakdown ? 'rotate(90 250 250)': ''}'>
+        <VisButton
+          x={setSpacing(-1) - config.circleRadius}
+          y={modelRow(metaModel.length - 1) - 25}
+          update={clearSet}
+          text={'X'}
+        />
+      </g>
+      <g class="color-legend">
+        <g>
+          <g transform="translate(2 36)">
+            <svg
+              fill="#000000"
+              height="10px"
+              width="10px"
+              version="1.1"
+              id="Capa_1"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              viewBox="0 0 490 490"
+              xml:space="preserve"
+              ><g
+                id="SVGRepo_iconCarrier"
+                transform={$breakdown ? 'rotate(90 250 250)' : ''}
+              >
                 <path d="M15.541,490V0l458.917,245.009L15.541,490z" />
-            </g></svg
+              </g></svg
+            >
+          </g>
+          <text
+            x={16}
+            y={42}
+            text-anchor="start"
+            alignment-baseline="middle"
+            font-weight="bold"
+            on:mousedown={() => {
+              $breakdown = !$breakdown;
+            }}
+            class="model-text pointer">{'Breakdown'}</text
           >
         </g>
-        <text
-          x={16}
-          y={42}
-          text-anchor="start"
-          alignment-baseline="middle"
-          font-weight="bold"
-          on:mousedown={() => {
-            $breakdown = !$breakdown;
-          }}
-          class="model-text pointer">{'Breakdown'}</text
-        >
+        {#if $breakdown}
+          <ColorLegend
+            x={20}
+            y={42 + 1 * 15}
+            color={colorTypes['normal']}
+            name={'Normal'}
+          />
+          <ColorLegend
+            x={20}
+            y={42 + 2 * 15}
+            color={colorTypes['wrong_class']}
+            name={'Wrong Class'}
+          />
+          <ColorLegend
+            x={20}
+            y={42 + 3 * 15}
+            color={colorTypes['far_away']}
+            name={'Far Away'}
+          />
+          <ColorLegend
+            x={20}
+            y={42 + 4 * 15}
+            color={colorTypes['duplicate']}
+            name={'Duplicate'}
+          />
+        {/if}
       </g>
-      {#if $breakdown}
-        <ColorLegend
-          x={20}
-          y={42 + 1 * 15}
-          color={colorTypes['normal']}
-          name={'Normal'}
-        />
-        <ColorLegend
-          x={20}
-          y={42 + 2 * 15}
-          color={colorTypes['wrong_class']}
-          name={'Wrong Class'}
-        />
-        <ColorLegend
-          x={20}
-          y={42 + 3 * 15}
-          color={colorTypes['far_away']}
-          name={'Far Away'}
-        />
-        <ColorLegend
-          x={20}
-          y={42 + 4 * 15}
-          color={colorTypes['duplicate']}
-          name={'Duplicate'}
-        />
-      {/if}
-    </g>
-    <g class="y-axis">
-      <text
-        x={columnSpacing(0) - 30}
-        y="15"
-        text-anchor="end"
-        alignment-baseline="middle">Detections</text
+      <g class="y-axis">
+        <text
+          x={columnSpacing(0) - 30}
+          y="15"
+          text-anchor="end"
+          alignment-baseline="middle">Detections</text
+        >
+        {#each yTicks as tick}
+          <g
+            class="tick tick-{tick}"
+            transform="translate({columnSpacing(0) -
+              config.circleRadius -
+              config.circleGap}, {y(tick)})"
+          >
+            <text x="-3" alignment-baseline="middle">{tick}</text>
+          </g>
+        {/each}
+      </g>
+    </svg>
+  </div>
+  <div class="set-vis"
+      style:left="{leftPanelWidth}px"
+      style:width="{$windowWidth - $menuWidth - leftPanelWidth}px"
+      style:height="{winHeight}px"
+      style="Max-Width:{$windowWidth - $menuWidth - leftPanelWidth}px"
       >
+    <svg
+      style:width="{svgWidth}px"
+      style:height="{winHeight}px"
+      style="Max-Width:{svgWidth}px"
+      class="svg-container"
+    >
       {#each yTicks as tick}
         <g
           class="tick tick-{tick}"
@@ -444,94 +479,129 @@
             config.circleRadius -
             config.circleGap}, {y(tick)})"
         >
-          <line x2="100%" />
-          <text x="-3" alignment-baseline="middle">{tick}</text>
+          <line
+            x2={(setData.length > 0 ? setData.length : 0) *
+              (config.colGap + config.circleRadius * 2)}
+          />
+        </g>
+        <g
+          class="tick tick-{tick}"
+          transform="translate({columnSpacing(
+            setData.length > 0 ? setData.length + 1 : 0
+          ) -
+            config.circleRadius -
+            config.circleGap}, {y(tick)})"
+        >
+          <line x2={columnSpacing(data.length > 0 ? data.length + 1 : 0)} />
         </g>
       {/each}
-    </g>
-
-    {#each setData as col, i}
-      <g
-        class="column"
-        on:mouseover={() => {
-          mouseOverI = i;
-        }}
-        on:focus={() => {
-          mouseOverI = i;
-        }}
-        on:mouseout={() => {
-          mouseOverI = -1;
-        }}
-        on:blur={() => {
-          mouseOverI = -1;
-        }}
-        transform="translate({columnSpacing(i) - config.circleRadius}, {0})"
-      >
-        <SetColumn
-          {col}
-          {i}
-          {config}
-          {mouseOverI}
-          {winHeight}
-          {padding}
-          {modelRow}
-          {y}
-          {selectModel}
-          {colSelected}
-          {barSelected}
-          breakdown={$breakdown}
+      {#each setData as col, i}
+        <g
+          class="column"
+          on:mouseover={() => {
+            mouseOverI = i;
+          }}
+          on:focus={() => {
+            mouseOverI = i;
+          }}
+          on:mouseout={() => {
+            mouseOverI = -1;
+          }}
+          on:blur={() => {
+            mouseOverI = -1;
+          }}
+          transform="translate({columnSpacing(i) - config.circleRadius}, {0})"
+        >
+          <SetColumn
+            {col}
+            {i}
+            {config}
+            {mouseOverI}
+            {winHeight}
+            {padding}
+            {modelRow}
+            {y}
+            {selectModel}
+            {colSelected}
+            {barSelected}
+            breakdown={$breakdown}
+            on:mousemove={(event) => {
+              evt = event;
+              hideTooltip = false;
+            }}
+            on:mouseout={() => (hideTooltip = true)}
+          />
+        </g>
+      {/each}
+      {#if setData.length > 0}
+        <line
+          x1={columnSpacing(setData.length)}
+          y1={modelRow(0) + config.circleRadius}
+          x2={columnSpacing(setData.length)}
+          y2={modelRow(metaModel.length - 1) - config.circleRadius}
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke="#9e9e9e"
         />
-      </g>
-    {/each}
-    {#if setData.length > 0}
-      <line
-        x1={columnSpacing(setData.length)}
-        y1={modelRow(0) + config.circleRadius}
-        x2={columnSpacing(setData.length)}
-        y2={modelRow(metaModel.length - 1) - config.circleRadius}
-        stroke-width="4"
-        stroke-linecap="round"
-        stroke="#9e9e9e"
-      />
-    {/if}
-
-    {#each data as col, i}
-      <g
-        class="column"
-        on:mouseover={() => {
-          mouseOverI = i + (setData.length > 0 ? setData.length + 1 : 0);
-        }}
-        on:focus={() => {
-          mouseOverI = i + (setData.length > 0 ? setData.length + 1 : 0);
-        }}
-        on:mouseout={() => {
-          mouseOverI = -1;
-        }}
-        on:blur={() => {
-          mouseOverI = -1;
-        }}
-        transform="translate({columnSpacing(
-          i + (setData.length > 0 ? setData.length + 1 : 0)
-        ) - config.circleRadius}, {0})"
-      >
-        <SetColumn
-          {col}
-          i={i + (setData.length > 0 ? setData.length + 1 : 0)}
-          {config}
-          {mouseOverI}
-          {winHeight}
-          {padding}
-          {modelRow}
-          {y}
-          {selectModel}
-          colSelected={colSelected +
-            (setData.length > 0 ? setData.length + 1 : 0)}
-          {barSelected}
-          breakdown={$breakdown}
-        />
-      </g>
-    {/each}
-  </svg>
+      {/if}
+      {#each data as col, i}
+        <g
+          class="column"
+          on:mouseover={() => {
+            mouseOverI = i + (setData.length > 0 ? setData.length + 1 : 0);
+          }}
+          on:focus={() => {
+            mouseOverI = i + (setData.length > 0 ? setData.length + 1 : 0);
+          }}
+          on:mouseout={() => {
+            mouseOverI = -1;
+          }}
+          on:blur={() => {
+            mouseOverI = -1;
+          }}
+          transform="translate({columnSpacing(
+            i + (setData.length > 0 ? setData.length + 1 : 0)
+          ) - config.circleRadius}, {0})"
+        >
+          <SetColumn
+            {col}
+            i={i + (setData.length > 0 ? setData.length + 1 : 0)}
+            {config}
+            {mouseOverI}
+            {winHeight}
+            {padding}
+            {modelRow}
+            {y}
+            {selectModel}
+            colSelected={colSelected +
+              (setData.length > 0 ? setData.length + 1 : 0)}
+            {barSelected}
+            breakdown={$breakdown}
+            on:mousemove={(event) => {
+              evt = event;
+              hideTooltip = false;
+            }}
+            on:mouseout={() => (hideTooltip = true)}
+          />
+        </g>
+      {/each}
+    </svg>
+    {#if hideTooltip !== true}
+    {@const numEleHeight = Object.keys(evt?.detail.props).length * 23 + 30}
+    <Tooltip
+      {evt}
+      let:detail
+      offsetY={evt?.detail.e.offsetY <= numEleHeight ? numEleHeight : -10}
+    >
+      <!-- For the tooltip, do another data join because the hover event only has the data from the geography data -->
+      {@const tooltipData = { ...detail.props }}
+      {#each Object.entries(tooltipData) as [key, value]}
+        {@const keyCapitalized = key.replace(/^\w/, (d) => d.toUpperCase())}
+        <div class="row"><span>{keyCapitalized}:</span> {value}</div>
+      {/each}
+    </Tooltip>
+  {/if}
+  </div>
 </div>
 
 <style>
@@ -547,6 +617,11 @@
   .column {
 
   } */
+  .set-vis {
+    position: absolute;
+    overflow-x: scroll;
+    overflow-y: hidden;
+  }
   .selected {
     border: 1px solid #636363;
   }
@@ -579,8 +654,21 @@
     top: 0px;
   }
   .set-vis-container {
-    position: relative;
+    position: absolute;
     min-width: 200px;
     border: 1px solid rgb(226, 226, 226);
+  }
+  .set-vis::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .set-vis::-webkit-scrollbar-track {
+    background-color: #e4e4e4;
+    border-radius: 100px;
+  }
+
+  .set-vis::-webkit-scrollbar-thumb {
+    background-color: #d4aa70;
+    border-radius: 100px;
   }
 </style>

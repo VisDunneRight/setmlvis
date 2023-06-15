@@ -122,6 +122,7 @@
     position: absolute;
     background-color: lightgray;
     min-width: 200px;
+    top:360px;
     border: 1px solid rgb(226, 226, 226);
     /* overflow-y: scroll; */
   }

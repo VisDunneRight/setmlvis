@@ -4,8 +4,12 @@
   export let option: DoubleSliderType;
 
   let values = [option.value, option.value2];
-  // value = option.value;
-  // value2 = option.value2;
+  function updateValue(d: Event, pos:number){
+    const target = d.target as HTMLInputElement;
+
+    values[pos] = Number(target?.value) ?? 0;
+    option.updatefunction(values);
+  }
 </script>
 
 <h4 class="title">{option.name}</h4>
@@ -13,14 +17,20 @@
   <input
     type="number"
     id={option.id}
-    bind:value={values[0]}
+    value={values[0]}
+    on:change={(d) =>{
+      updateValue(d, 0);
+    }}
     step="0.01"
     class="combo"
   />
   <input
     type="number"
     id={option.id}
-    bind:value={values[1]}
+    value={values[1]}
+    on:change={(d) =>{
+      updateValue(d, 1);
+    }}
     step="0.01"
     class="combo"
   />

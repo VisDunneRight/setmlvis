@@ -26,7 +26,12 @@
   }
 
   menuMap['confidence'].updatefunction = function(values:[number, number]){
-    $confidence = values;
+    
+    if(values[0] > values[1]){
+      $confidence = [values[1], values[0]]
+    } else {
+      $confidence = values;
+    }
   }
   menuMap['detectionSize'].updatefunction = function(values:[number, number]){
     $detectionSize = values;

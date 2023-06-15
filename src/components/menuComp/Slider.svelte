@@ -3,6 +3,12 @@
   import type { SliderType } from '../../types';
   export let option: SliderType;
   let values = [option.value];
+  function updateValue(d: Event){
+    const target = d.target as HTMLInputElement;
+    console.log(target.value)
+    values[0] = Number(target?.value) ?? 0;
+    option.updatefunction(values[0]);
+  }
 </script>
 
 <div class="row">
@@ -10,8 +16,12 @@
   <input
     type="number"
     id={option.id}
-    bind:value={values[0]}
+    value={values[0]}
+    on:change={(d) =>{
+      updateValue(d);
+    }}
     step="0.01"
+    min={option.min}
     class="combo"
   />
 </div>
