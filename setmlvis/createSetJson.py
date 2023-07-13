@@ -293,6 +293,7 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
                 if addList[0] != 0:
                     newDict = {}
                     newDict['imgName'] = imageName
+                    newDict['id'] = str(count) + '-' + imageName
                     newDict['IOU'] = key                        
                     newDict['boxes'] = dict(zip(subset, value))
                     im = Image.open(folderName + 'images/' + imageName)
@@ -422,7 +423,7 @@ def getRealSets(inp, subset, iouAlgos, folderName, imageName, filterClass, groun
                 else:
                     item['category'] = 'far_away'  # Add category information
         else:
-            item['category'] = 'normal'  # Add category information for normal detections
+            item['category'] = 'low_threshold'  # Add category information for low threshold detections
 
 
     # # Add these lines to store false positive categories in the dictionary

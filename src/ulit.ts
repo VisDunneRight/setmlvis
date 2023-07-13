@@ -14,7 +14,7 @@ export const color = [
 export const colorTypes = {
   true_pos: '#377eb8',
   false_pos: '#e41a1c',
-  normal: '#ff8a80',
+  low_threshold: '#ff8a80',
   wrong_class: '#ff5252',
   far_away: '#ff1744',
   duplicate: '#d50000',

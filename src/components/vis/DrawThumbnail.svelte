@@ -1,11 +1,17 @@
 <script lang="ts">
   import type { ImgData } from '../../types';
+  import DuplicateIcon from '../../assets/duplicate.svelte';
+  import FarWayIcon from '../../assets/far-away.svelte';
+  import LowThresholdIcon from '../../assets/low-threshold-normal.svelte';
+  import WrongClassIcon from '../../assets/wrong-class.svelte';
+  import Checkbox from '../menuComp/checkbox.svelte';
+
   import {
     selectedImg,
     openDetailView,
     colorMap,
     selectedImgIdx,
-    breakdown
+    breakdown,
   } from '../../stores';
   import { color, colorTypes } from '../../ulit';
 
@@ -15,6 +21,8 @@
   export let top: number;
   export let left: number;
   export let folderName = '';
+  export let selected:boolean;
+  export let updateSelection;
 
   $: imgWidth = data === undefined ? 0 : data.imgSize[0];
   $: imgHeight = data === undefined ? 0 : data.imgSize[1];
@@ -25,24 +33,25 @@
     $selectedImgIdx = index;
     $openDetailView = true;
   }
-  
+  let iconSize = 14;
 </script>
 
 <div
   class="media-element"
-  style="width:{width}px;height:{height}px;left:{left}px;top:{top}px;{$breakdown ? 'border:3px ridge ' + colorTypes[data.category]+';': ''}"
->
+  style="width:{width}px;height:{height}px;left:{left}px;top:{top}px;">
   {#if data}
     <button
       on:click={() => {
         selectImgData();
       }}
+      class="button"
     >
       <img
         height="{height}px"
         src={folderName + data.imgName}
         alt="selected Figure"
       />
+      
       <svg {width} {height}>
         {#each Object.entries(data.boxes) as [name, box]}
           <rect
@@ -50,9 +59,8 @@
             y={(box[2] * width) / imgRatio}
             width={(box[3] - box[1]) * width}
             height={((box[4] - box[2]) * width) / imgRatio}
-            fill="none"
+            class={'box-rect'}
             stroke={color[$colorMap[name]]}
-            stroke-width="2"
           />
         {/each}
         {#if data.iouGT > 0}
@@ -65,8 +73,24 @@
             stroke="white"
           />
         {/if}
+      {#if $breakdown === true}
+        <polygon points="0,0 0,36 36,0" fill={colorTypes[data.category]}/>
+        {#if data.category === 'duplicate'}
+          <DuplicateIcon width={iconSize} height={iconSize} />
+        {:else if data.category === 'far_away'}
+          <FarWayIcon width={iconSize + 6} height={iconSize + 6} />
+        {:else if data.category === 'low_threshold'}
+          <LowThresholdIcon width={iconSize} height={iconSize} />
+        {:else if data.category === 'wrong_class'}
+          <WrongClassIcon width={iconSize} height={iconSize} />
+        {/if}
+      {/if}
       </svg>
     </button>
+    <div class="checkbox-pos {selected === true ? 'checkbox-show': ''}">
+      <div></div>
+      <Checkbox checked={selected} updateSelection={updateSelection}/>
+    </div>
   {/if}
 </div>
 
@@ -77,6 +101,36 @@
     left: 0px;
     top: 0px;
   }
+  svg:hover, svg:active{
+    background: rgba(0,0,0,.6);
+  }
+  .box-rect {
+    fill: none;
+    stroke-width: 2px;
+  }
+
+  .checkbox-pos {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: baseline;
+    opacity: 0;
+  }
+  .checkbox-show {
+    opacity: 1;
+    visibility: visible;
+    background: linear-gradient(rgba(0,0,0,.6), rgba(0,0,0,0));
+  }
+
+  .checkbox-pos:hover, .checkbox-pos:active{
+    opacity: 1;
+    visibility: visible;
+    background: linear-gradient(rgba(0,0,0,.6), rgba(0,0,0,0));
+  }
+
 
   .media-element {
     border-radius: 0.25rem;

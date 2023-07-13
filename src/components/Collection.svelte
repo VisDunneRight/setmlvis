@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { selectedCol, windowWidth, menuWidth } from '../stores';
+  import { selectedCol, selectedImgs, windowWidth, menuWidth } from '../stores';
   import type { ImgData, ImgInfo } from '../types';
   import DrawThumbnail from './vis/DrawThumbnail.svelte';
   export let folderName = '';
   let imgHeight = 100;
   let gap = 4;
+  $:selected = {};
 
   function rescaleImages(
     imageData: ImgData[],
@@ -69,9 +70,19 @@
   $: imgInfo = rescaleImages(
     $selectedCol,
     imgHeight,
-    $windowWidth - $menuWidth - 8,
+    $windowWidth - $menuWidth - 16,
     gap
   );
+
+  function UpdateSelectedImgs(id:string, data:ImgData, checked:boolean){
+    if(checked){
+      $selectedImgs[id] = data
+    } else {
+      delete $selectedImgs[id];
+    }
+    selected = $selectedImgs;
+  }
+  $:console.log($selectedImgs)
 </script>
 
 <div class="collection-container" style:width="100%" style:height="40%">
@@ -84,6 +95,8 @@
         height={img.height}
         index={i}
         {folderName}
+        selected={img.data.id in selected}
+        updateSelection={(checked) => {UpdateSelectedImgs(img.data.id, img.data, checked)}}
       />
     {/each}
   </div>

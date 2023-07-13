@@ -50,7 +50,7 @@
     falsePos: number;
     type: {
       duplicate: number;
-      normal: number;
+      low_threshold: number;
       far_away: number;
       wrong_class: number;
     };
@@ -122,7 +122,7 @@
         falsePos: 0,
         type: {
           duplicate: 0,
-          normal: 0,
+          low_threshold: 0,
           far_away: 0,
           wrong_class: 0,
         },
@@ -142,7 +142,6 @@
       });
       data.push(column);
     });
-    console.log(data);
     return data;
   }
 
@@ -232,7 +231,7 @@
       falsePos: 0,
       type: {
         duplicate: 0,
-        normal: 0,
+        low_threshold: 0,
         far_away: 0,
         wrong_class: 0,
       },
@@ -417,26 +416,30 @@
           <ColorLegend
             x={20}
             y={42 + 1 * 15}
-            color={colorTypes['normal']}
-            name={'Normal'}
+            color={colorTypes['low_threshold']}
+            name={'low_threshold'}
+            type={'low_threshold'}
           />
           <ColorLegend
             x={20}
             y={42 + 2 * 15}
             color={colorTypes['wrong_class']}
             name={'Wrong Class'}
+            type={'wrong_class'}
           />
           <ColorLegend
             x={20}
             y={42 + 3 * 15}
             color={colorTypes['far_away']}
             name={'Far Away'}
+            type={'far_away'}
           />
           <ColorLegend
             x={20}
             y={42 + 4 * 15}
             color={colorTypes['duplicate']}
             name={'Duplicate'}
+            type={'duplicate'}
           />
         {/if}
       </g>

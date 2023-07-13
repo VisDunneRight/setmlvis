@@ -31,6 +31,7 @@ export type ImgData = {
   boxes:object,
   confidence:Array<number>,
   gtShape:FN,
+  id:string,
   imgName:string,
   imgSize:[number, number],
   category:string,

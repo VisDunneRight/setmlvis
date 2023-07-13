@@ -21,7 +21,7 @@
   $: duplicate = col.truePos + col.type.duplicate;
   $: far_away = duplicate + col.type.far_away;
   $: wrong_class = far_away + col.type.wrong_class;
-  $: normal = wrong_class + col.type.normal;
+  $: low_threshold = wrong_class + col.type.low_threshold;
 </script>
 
 <rect
@@ -135,7 +135,7 @@
     on:blur={(e) => dispatch('mouseout')}
   />
 {:else}
-  {@const falseProp = {'Normal': col.type.normal,
+  {@const falseProp = {'Low Threshold': col.type.low_threshold,
                        'Wrong Class': col.type.wrong_class,
                        'Far Away': col.type.far_away,
                        'Duplicate': col.type.duplicate}}
@@ -169,16 +169,16 @@
     />
     <rect
       x={0}
-      y={y(normal)}
+      y={y(low_threshold)}
       width={config.circleRadius * 2}
-      height={y(wrong_class) - y(normal)}
-      fill={colorTypes['normal']}
+      height={y(wrong_class) - y(low_threshold)}
+      fill={colorTypes['low_threshold']}
     />
     <rect
       x={0}
-      y={y(normal)}
+      y={y(low_threshold)}
       width={config.circleRadius * 2}
-      height={y(col.truePos) - y(normal)}
+      height={y(col.truePos) - y(low_threshold)}
       stroke="none"
       stroke-width="3"
       fill="none"
@@ -192,7 +192,7 @@
 {/if}
 
 <!-- 'duplicate': number,
-'normal': number,
+'low_threshold': number,
 'far_way': number,
 'wrong_class': number -->
 <style>

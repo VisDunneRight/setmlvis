@@ -85,6 +85,7 @@ function createSyncedWidget<T>(
 // Declare stores with their associated Traitlets here.
 export let dataset: Writable<Data>;
 export let selectedCol: Writable<ImgData[]>;
+export let selectedImgs: Writable<Record<string, ImgData>>;
 export let num_instances: Writable<number>;
 export let height: Writable<number>;
 export let IOU: Writable<number>;
@@ -117,6 +118,7 @@ export function setStoreModels(model: DOMWidgetModel): void {
     model
   );
   selectedCol = createSyncedWidget<ImgData[]>('selectedCol', [], model);
+  selectedImgs = createSyncedWidget<Record<string,ImgData>>('selectedImgs', {}, model);
   num_instances = createSyncedWidget<number>('num_instances', 0, model);
   height = createSyncedWidget<number>('height', 600, model);
   IOU = createSyncedWidget<number>('IOU', 0.8, model);
