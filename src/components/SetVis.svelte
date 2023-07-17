@@ -283,7 +283,7 @@
     config.colGap +
     config.circleRadius +
     config.setSpacing;
-
+  
 </script>
 
   <div class="set-vis-container" style:width="100%" style:height="{winHeight}px">
@@ -590,11 +590,10 @@
       {/each}
     </svg>
     {#if hideTooltip !== true}
-    {@const numEleHeight = Object.keys(evt?.detail.props).length * 23 + 30}
     <Tooltip
       {evt}
       let:detail
-      offsetY={evt?.detail.e.offsetY <= numEleHeight ? numEleHeight : -10}
+      width={$windowWidth - $menuWidth - leftPanelWidth}
     >
       <!-- For the tooltip, do another data join because the hover event only has the data from the geography data -->
       {@const tooltipData = { ...detail.props }}

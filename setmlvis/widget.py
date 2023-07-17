@@ -31,6 +31,8 @@ class SetMLVisWidget(DOMWidget):
     num_instances = Int(0).tag(sync=True)
     IOU = Float(0.8).tag(sync=True)
     height = Int(600).tag(sync=True)
+    # selectedCol = List([]).tag(sync=True)
+    selectedImgs = Dict({}).tag(sync=True)
     def __init__(
         self,
         data: Union[str, Path, dict],
