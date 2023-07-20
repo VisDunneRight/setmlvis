@@ -3,7 +3,7 @@
   import {
     IOU,
     dataset,
-    height,
+    topHeight,
     selectedCol,
     colorMap,
     confidence,
@@ -40,7 +40,7 @@
   });
 
   // let winWidth = $windowWidth - $menuWidth;
-  let winHeight = $height * 0.6;
+  let winHeight = $topHeight;
   //Calculate the false postive and true positive
   type ColumnType = {
     name: string;
@@ -238,7 +238,6 @@
       data: [],
     };
     setData.push(column);
-
     data.forEach((ele) => {
       const nameArry = ele.name.split(',');
       let match = true;
@@ -263,8 +262,9 @@
         });
         setData[0].falsePos += ele.falsePos;
         setData[0].truePos += ele.truePos;
-        for (const [key, value] of Object.entries(ele.type)) {
-          setData[0].type[key] += value;
+        const keys = Object.keys(ele.type) as Array<keyof typeof ele.type>
+        for (const key of keys) {
+          setData[0].type[key] += ele.type[key];
         }
       }
     });

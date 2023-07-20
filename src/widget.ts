@@ -26,7 +26,7 @@ export class SetMLVisModel extends DOMWidgetModel {
       _view_module_version: SetMLVisModel.view_module_version,
       data: {},
       num_instance: 0,
-      height: 600,
+      height: 800,
       IOU:0.8,
     };
   }

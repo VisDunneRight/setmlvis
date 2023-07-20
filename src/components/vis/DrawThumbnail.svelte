@@ -21,8 +21,8 @@
   export let top: number;
   export let left: number;
   export let folderName = '';
-  export let selected:boolean;
-  export let updateSelection;
+  export let selected: boolean;
+  export let updateSelection: (checked: boolean) => void;
 
   $: imgWidth = data === undefined ? 0 : data.imgSize[0];
   $: imgHeight = data === undefined ? 0 : data.imgSize[1];
@@ -38,7 +38,8 @@
 
 <div
   class="media-element"
-  style="width:{width}px;height:{height}px;left:{left}px;top:{top}px;">
+  style="width:{width}px;height:{height}px;left:{left}px;top:{top}px;"
+>
   {#if data}
     <button
       on:click={() => {
@@ -51,7 +52,7 @@
         src={folderName + data.imgName}
         alt="selected Figure"
       />
-      
+
       <svg {width} {height}>
         {#each Object.entries(data.boxes) as [name, box]}
           <rect
@@ -73,23 +74,23 @@
             stroke="white"
           />
         {/if}
-      {#if $breakdown === true}
-        <polygon points="0,0 0,36 36,0" fill={colorTypes[data.category]}/>
-        {#if data.category === 'duplicate'}
-          <DuplicateIcon width={iconSize} height={iconSize} />
-        {:else if data.category === 'far_away'}
-          <FarWayIcon width={iconSize + 6} height={iconSize + 6} />
-        {:else if data.category === 'low_threshold'}
-          <LowThresholdIcon width={iconSize} height={iconSize} />
-        {:else if data.category === 'wrong_class'}
-          <WrongClassIcon width={iconSize} height={iconSize} />
+        {#if $breakdown === true}
+          <polygon points="0,0 0,36 36,0" fill={colorTypes[data.category]} />
+          {#if data.category === 'duplicate'}
+            <DuplicateIcon width={iconSize} height={iconSize} />
+          {:else if data.category === 'far_away'}
+            <FarWayIcon width={iconSize + 6} height={iconSize + 6} />
+          {:else if data.category === 'low_threshold'}
+            <LowThresholdIcon width={iconSize} height={iconSize} />
+          {:else if data.category === 'wrong_class'}
+            <WrongClassIcon width={iconSize} height={iconSize} />
+          {/if}
         {/if}
-      {/if}
       </svg>
     </button>
-    <div class="checkbox-pos {selected === true ? 'checkbox-show': ''}">
-      <div></div>
-      <Checkbox checked={selected} updateSelection={updateSelection}/>
+    <div class="checkbox-pos {selected === true ? 'checkbox-show' : ''}">
+      <div />
+      <Checkbox checked={selected} {updateSelection} />
     </div>
   {/if}
 </div>
@@ -101,8 +102,9 @@
     left: 0px;
     top: 0px;
   }
-  svg:hover, svg:active{
-    background: rgba(0,0,0,.6);
+  svg:hover,
+  svg:active {
+    background: rgba(0, 0, 0, 0.6);
   }
   .box-rect {
     fill: none;
@@ -122,15 +124,15 @@
   .checkbox-show {
     opacity: 1;
     visibility: visible;
-    background: linear-gradient(rgba(0,0,0,.6), rgba(0,0,0,0));
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
   }
 
-  .checkbox-pos:hover, .checkbox-pos:active{
+  .checkbox-pos:hover,
+  .checkbox-pos:active {
     opacity: 1;
     visibility: visible;
-    background: linear-gradient(rgba(0,0,0,.6), rgba(0,0,0,0));
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
   }
-
 
   .media-element {
     border-radius: 0.25rem;

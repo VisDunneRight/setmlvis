@@ -100,6 +100,7 @@ export let breakdown: Writable<boolean>;
 export let colorMap: Writable<StringNumMap>;
 export let confidence: Writable<[number, number]>;
 export let detectionSize: Writable<[number, number]>;
+export let topHeight: Writable<number>; 
 
 // Set the model for each store you create.
 export function setStoreModels(model: DOMWidgetModel): void {
@@ -120,9 +121,11 @@ export function setStoreModels(model: DOMWidgetModel): void {
   selectedCol = createSyncedWidget<ImgData[]>('selectedCol', [], model);
   selectedImgs = createSyncedWidget<Record<string,ImgData>>('selectedImgs', {}, model);
   num_instances = createSyncedWidget<number>('num_instances', 0, model);
-  height = createSyncedWidget<number>('height', 600, model);
+  height = createSyncedWidget<number>('height', 800, model);
   IOU = createSyncedWidget<number>('IOU', 0.8, model);
+  
   //Stores that are not synced with python
+  topHeight = writable(300);
   windowWidth = writable(600);
   menuWidth = writable(200);
   selectedImg = writable(undefined);

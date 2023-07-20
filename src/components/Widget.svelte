@@ -1,22 +1,29 @@
 <script lang="ts">
-  import {height, windowWidth, menuWidth, openDetailView, dataset} from '../stores';
+  import {
+    height,
+    windowWidth,
+    menuWidth,
+    openDetailView,
+    dataset,
+  } from '../stores';
   import { onMount } from 'svelte';
-  import Menu from './Menu.svelte'
+  import Menu from './Menu.svelte';
   // import DetailView from './DetailView.svelte'
-  import SetVis from './SetVis.svelte'
-  import Collection from './Collection.svelte'
+  import SetVis from './SetVis.svelte';
+  import Collection from './Collection.svelte';
   import DetailView from './DetailView.svelte';
 
   let div: HTMLDivElement;
-  let gridHeight: number;
-  window.onclick = function(event: Event & {target: HTMLDivElement}) {
-    if( event.target !== null 
-        && event.target.getAttribute('id') === 'setvis-model-container'){
-          $openDetailView = false;
-        }
-  }
-  let folderName='';
-  $: if($dataset['meta']){
+  window.onclick = function (event: Event & { target: HTMLDivElement }) {
+    if (
+      event.target !== null &&
+      event.target.getAttribute('id') === 'setvis-model-container'
+    ) {
+      $openDetailView = false;
+    }
+  };
+  let folderName = '';
+  $: if ($dataset['meta']) {
     folderName = $dataset['meta']['folderName'];
   }
 
@@ -34,58 +41,57 @@
             ? entry.contentBoxSize[0]
             : entry.contentBoxSize;
           $windowWidth = contentBoxSize.inlineSize;
-          gridHeight = contentBoxSize.blockSize;
         } else {
           $windowWidth = entry.contentRect.width;
-          gridHeight = entry.contentRect.height;
         }
       }
     );
     resizeObserver.observe(div);
     return () => resizeObserver.unobserve(div);
   });
-
 </script>
+
 <!-- <header> -->
-  <link rel="stylesheet" href="../node_modules/svelte-material-ui/bare.css" />
-  <link
+<link rel="stylesheet" href="../node_modules/svelte-material-ui/bare.css" />
+<link
   rel="stylesheet"
   href="https://fonts.googleapis.com/icon?family=Material+Icons"
-  />
-  <!-- Roboto -->
-  <link
+/>
+<!-- Roboto -->
+<link
   rel="stylesheet"
   href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,600,700"
-  />
-  <!-- Roboto Mono -->
-  <link
+/>
+<!-- Roboto Mono -->
+<link
   rel="stylesheet"
   href="https://fonts.googleapis.com/css?family=Roboto+Mono"
-  />
-  <link
-        rel="stylesheet"
-        href="https://unpkg.com/@material/typography@14.0.0/dist/mdc.typography.css"
-      />
+/>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/@material/typography@14.0.0/dist/mdc.typography.css"
+/>
 <!-- </header> -->
 <div class="widget-container" style:height="{$height}px" bind:this={div}>
-  <Menu/>
-  <div class="vis-container" 
-        style:height="{$height}px" 
-        style:width="{$windowWidth - $menuWidth}px" 
-        style:left="{$menuWidth}px">
-    <SetVis/>
-    <Collection folderName={folderName}/>
+  <Menu />
+  <div
+    class="vis-container"
+    style:height="{$height}px"
+    style:width="{$windowWidth - $menuWidth}px"
+    style:left="{$menuWidth}px"
+  >
+    <SetVis />
+    <Collection {folderName} />
   </div>
-  <DetailView folderName={folderName}/>
+  <DetailView {folderName} />
 </div>
-
 
 <style>
   .widget-container {
-    width:100%;
+    width: 100%;
     border: 1px solid rgb(226, 226, 226);
   }
-  .vis-container{
+  .vis-container {
     position: relative;
   }
 </style>

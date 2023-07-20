@@ -1,11 +1,19 @@
 <script lang="ts">
-  import { selectedCol, selectedImgs, windowWidth, menuWidth } from '../stores';
+  import {
+    selectedCol,
+    selectedImgs,
+    windowWidth,
+    menuWidth,
+    topHeight,
+  } from '../stores';
   import type { ImgData, ImgInfo } from '../types';
+  import RangeSlider from 'svelte-range-slider-pips';
   import DrawThumbnail from './vis/DrawThumbnail.svelte';
+  import './collectionSlider.css';
   export let folderName = '';
-  let imgHeight = 100;
+  let imgHeight = [100];
   let gap = 4;
-  $:selected = {};
+  $: selected = {};
 
   function rescaleImages(
     imageData: ImgData[],
@@ -69,36 +77,114 @@
   }
   $: imgInfo = rescaleImages(
     $selectedCol,
-    imgHeight,
+    imgHeight[0],
     $windowWidth - $menuWidth - 16,
     gap
   );
 
-  function UpdateSelectedImgs(id:string, data:ImgData, checked:boolean){
-    if(checked){
-      $selectedImgs[id] = data
+  function UpdateSelectedImgs(id: string, data: ImgData, checked: boolean) {
+    let selectImgUpdate = { ...$selectedImgs };
+    if (checked) {
+      selectImgUpdate[id] = data;
     } else {
-      delete $selectedImgs[id];
+      delete selectImgUpdate[id];
     }
-    selected = $selectedImgs;
+    selected = selectImgUpdate;
+    $selectedImgs = selectImgUpdate;
   }
-  $:console.log($selectedImgs)
 </script>
 
-<div class="collection-container" style:width="100%" style:height="40%">
-  <div class="media-scroller" id ="scrollBar">
-    {#each imgInfo as img, i}
-      <DrawThumbnail
-        left={img.left}
-        top={img.top}
-        data={img.data}
-        height={img.height}
-        index={i}
-        {folderName}
-        selected={img.data.id in selected}
-        updateSelection={(checked) => {UpdateSelectedImgs(img.data.id, img.data, checked)}}
-      />
-    {/each}
+<div
+  class="collection-container"
+  style:width="100%"
+  style:height="100%"
+  style:top="{$topHeight}px"
+>
+  <div class="media-scroller" id="scrollBar">
+    <div class="collection-menu">
+      <div style="display: block;">
+        <div class="menu-select">
+          <div title="Manage selection" class="img-select">
+            <span>{Object.entries($selectedImgs).length}</span>
+            <svg
+              class="svg-icon"
+              focusable="false"
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              data-testid="CheckIcon"
+              ><path
+                d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+              /></svg
+            >
+          </div>
+        </div>
+        <div class="menu-option">
+          <div
+            title="Clear images from current collection "
+            class="menu-selection"
+            style="background-color: rgb(26, 26, 26); color: rgb(179, 179, 179); cursor: pointer;"
+          >
+            <span>Clear Current Selected Images</span>
+          </div>
+          <div
+            title="Clear all images selected"
+            class="menu-selection"
+            style="background-color: rgb(26, 26, 26); color: rgb(179, 179, 179); cursor: pointer;"
+          >
+            <span>Clear Selected Images</span>
+          </div>
+          <div
+            title="Show all images selected"
+            class="menu-selection"
+            style="background-color: rgb(26, 26, 26); color: rgb(179, 179, 179); cursor: pointer;"
+          >
+            <span>Only Show Selected Images</span>
+          </div>
+          <div
+            title="Hide selected images"
+            class="menu-selection"
+            style="background-color: rgb(26, 26, 26); color: rgb(179, 179, 179); cursor: pointer;"
+          >
+            <span>Hide Selected Images</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;color:#f3edeb;">
+        <div class="collection-count">
+          <div>
+            <span>{imgInfo.length}</span>
+            images
+          </div>
+        </div>
+        <div class="image-size">
+          <RangeSlider
+            pips
+            min={100}
+            max={300}
+            step={10}
+            bind:values={imgHeight}
+            id="reverse-pips"
+          />
+        </div>
+      </div>
+    </div>
+    <div />
+    <div style="position:relative;">
+      {#each imgInfo as img, i}
+        <DrawThumbnail
+          left={img.left}
+          top={img.top}
+          data={img.data}
+          height={img.height}
+          index={i}
+          {folderName}
+          selected={img.data.id in selected}
+          updateSelection={(checked) => {
+            UpdateSelectedImgs(img.data.id, img.data, checked);
+          }}
+        />
+      {/each}
+    </div>
   </div>
 </div>
 
@@ -111,7 +197,98 @@
     overflow-x: hidden;
   }
 
-/* #scrollBar::-webkit-scrollbar-track
+  .collection-menu {
+    position: sticky;
+    top: 0px;
+    display: flex;
+    width: 100%;
+    height: 48px;
+    padding: 7px;
+    z-index: 2;
+    justify-content: space-between;
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
+  }
+  .menu-selection {
+    cursor: pointer;
+    margin: 0px -0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-weight: bold;
+    display: flex;
+    -webkit-box-pack: center;
+    place-content: center;
+    flex-direction: column;
+    text-decoration: none;
+    color: rgb(179, 179, 179);
+  }
+
+  .menu-select {
+    position: relative;
+    align-items: center;
+    display: flex;
+  }
+
+  .menu-option {
+    background-color: rgb(26, 26, 26);
+    border: 1px solid rgb(13, 13, 13);
+    border-radius: 2px;
+    box-shadow: rgb(26, 26, 26) 0px 2px 20px;
+    box-sizing: border-box;
+    margin-top: 0.6rem;
+    position: absolute;
+    width: auto;
+    z-index: 801;
+    font-size: 14px;
+    padding: 0px 0.5rem;
+    min-width: 14rem;
+    opacity: 1;
+    z-index: 100001;
+    right: unset;
+  }
+
+  .img-select {
+    width: 50px;
+    padding: 0.25rem 0.75rem;
+    line-height: 2rem;
+    border-radius: 1rem;
+    border: none;
+    background-color: blueviolet;
+    color: rgb(255, 255, 255);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+  }
+  .svg-icon {
+    user-select: none;
+    width: 1em;
+    display: inline-block;
+    fill: currentcolor;
+    flex-shrink: 0;
+    transition: fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    font-size: 1.5rem;
+  }
+
+  .media-scroller {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .collection-count {
+    display: flex;
+    -webkit-box-pack: center;
+    place-content: center;
+    flex-direction: column;
+    margin: 0px 0.25rem;
+    padding-right: 1rem;
+    font-weight: bold;
+  }
+  .image-size {
+    width: 10rem;
+    padding-right: 1rem;
+  }
+
+  /* #scrollBar::-webkit-scrollbar-track
 {
 	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
 	border-radius: 5px;
@@ -135,7 +312,7 @@
     position: absolute;
     background-color: lightgray;
     min-width: 200px;
-    top:360px;
+    top: 360px;
     border: 1px solid rgb(226, 226, 226);
     /* overflow-y: scroll; */
   }
