@@ -156,3 +156,6 @@ setmlvis/labextension/*.tgz
 setmlvis/labextension
 examples/data/*
 examples/twentyFiveImages.json
+env-home
+env-work
+env
