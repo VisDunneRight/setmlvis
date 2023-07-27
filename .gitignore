@@ -161,3 +161,6 @@ examples/droneVideoColorCorrectFormat/*
 examples/droneProjectedData/*
 examples/droneVideoColorCorrectFormat.json
 examples/satellite_data.json
+env-home
+env-work
+env
