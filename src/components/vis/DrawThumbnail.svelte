@@ -12,6 +12,7 @@
     colorMap,
     selectedImgIdx,
     breakdown,
+    IOU,
   } from '../../stores';
   import { color, colorTypes } from '../../ulit';
 
@@ -34,6 +35,7 @@
     $openDetailView = true;
   }
   let iconSize = 14;
+  $: console.log(data);
 </script>
 
 <div
@@ -75,17 +77,22 @@
           />
         {/if}
         {#if $breakdown === true}
-          <polygon points="0,0 0,36 36,0" fill={colorTypes[data.category]} />
-          {#if data.category === 'duplicate'}
-            <DuplicateIcon width={iconSize} height={iconSize} />
-          {:else if data.category === 'far_away'}
-            <FarWayIcon width={iconSize + 6} height={iconSize + 6} />
-          {:else if data.category === 'low_threshold'}
-            <LowThresholdIcon width={iconSize} height={iconSize} />
-          {:else if data.category === 'wrong_class'}
-            <WrongClassIcon width={iconSize} height={iconSize} />
+          {#if data.iouGT >= $IOU}
+            <polygon points="0,0 0,36 36,0" fill={colorTypes['true_pos']} />
+          {:else}
+            <polygon points="0,0 0,36 36,0" fill={colorTypes[data.category]} />
+            {#if data.category === 'duplicate'}
+              <DuplicateIcon width={iconSize} height={iconSize} />
+            {:else if data.category === 'far_away'}
+              <FarWayIcon width={iconSize + 6} height={iconSize + 6} />
+            {:else if data.category === 'low_threshold'}
+              <LowThresholdIcon width={iconSize} height={iconSize} />
+            {:else if data.category === 'wrong_class'}
+              <WrongClassIcon width={iconSize} height={iconSize} />
+            {/if}
           {/if}
         {/if}
+        <title>{data.imgName}</title>
       </svg>
     </button>
     <div class="checkbox-pos {selected === true ? 'checkbox-show' : ''}">

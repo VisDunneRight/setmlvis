@@ -5,10 +5,19 @@
     windowWidth,
     menuWidth,
     topHeight,
+    height,
   } from '../stores';
   import type { ImgData, ImgInfo } from '../types';
   import RangeSlider from 'svelte-range-slider-pips';
   import DrawThumbnail from './vis/DrawThumbnail.svelte';
+  import VisToggle from './vis/VisToggle.svelte';
+  import {
+    Menu,
+    MenuButton,
+    MenuItems,
+    MenuItem,
+  } from '@rgossiaux/svelte-headlessui';
+
   import './collectionSlider.css';
   export let folderName = '';
   let imgHeight = [100];
@@ -82,6 +91,11 @@
     gap
   );
 
+  $: collectionHeight = $height - $topHeight - 48;
+  $: heightSize =
+    imgInfo.length > 0
+      ? imgInfo[imgInfo.length - 1].top + imgInfo[imgInfo.length - 1].height
+      : 0;
   function UpdateSelectedImgs(id: string, data: ImgData, checked: boolean) {
     let selectImgUpdate = { ...$selectedImgs };
     if (checked) {
@@ -91,6 +105,40 @@
     }
     selected = selectImgUpdate;
     $selectedImgs = selectImgUpdate;
+  }
+
+  function ClearAllSelectedImgs() {
+    $selectedImgs = {};
+    selected = {};
+  }
+  function ShowSelectedImgs() {
+    if (Object.entries($selectedImgs).length === 0) {
+      return;
+    }
+    let imgSelection: ImgData[] = [];
+    for (const [, value] of Object.entries($selectedImgs).values()) {
+      imgSelection.push(value);
+    }
+    $selectedCol = imgSelection;
+  }
+  function ClearCurrentSelectedImgs() {
+    let selectImgUpdate = { ...$selectedImgs };
+    for (const imgdata of $selectedCol) {
+      if (imgdata.id in selectImgUpdate) {
+        delete selectImgUpdate[imgdata.id];
+      }
+    }
+    selected = selectImgUpdate;
+    $selectedImgs = selectImgUpdate;
+  }
+  function HideSelectedImgs() {
+    let imgSelection: ImgData[] = [];
+    for (const imgdata of $selectedCol) {
+      if (!(imgdata.id in $selectedImgs)) {
+        imgSelection.push(imgdata);
+      }
+    }
+    $selectedCol = imgSelection;
   }
 </script>
 
@@ -102,9 +150,9 @@
 >
   <div class="media-scroller" id="scrollBar">
     <div class="collection-menu">
-      <div style="display: block;">
-        <div class="menu-select">
-          <div title="Manage selection" class="img-select">
+      <div style="display:flex; align-items:center;gap:1rem;">
+        <Menu>
+          <MenuButton class="img-select">
             <span>{Object.entries($selectedImgs).length}</span>
             <svg
               class="svg-icon"
@@ -116,38 +164,63 @@
                 d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
               /></svg
             >
-          </div>
-        </div>
-        <div class="menu-option">
-          <div
-            title="Clear images from current collection "
-            class="menu-selection"
-            style="background-color: rgb(26, 26, 26); color: rgb(179, 179, 179); cursor: pointer;"
-          >
-            <span>Clear Current Selected Images</span>
-          </div>
-          <div
-            title="Clear all images selected"
-            class="menu-selection"
-            style="background-color: rgb(26, 26, 26); color: rgb(179, 179, 179); cursor: pointer;"
-          >
-            <span>Clear Selected Images</span>
-          </div>
-          <div
-            title="Show all images selected"
-            class="menu-selection"
-            style="background-color: rgb(26, 26, 26); color: rgb(179, 179, 179); cursor: pointer;"
-          >
-            <span>Only Show Selected Images</span>
-          </div>
-          <div
-            title="Hide selected images"
-            class="menu-selection"
-            style="background-color: rgb(26, 26, 26); color: rgb(179, 179, 179); cursor: pointer;"
-          >
-            <span>Hide Selected Images</span>
-          </div>
-        </div>
+          </MenuButton>
+          <MenuItems>
+            <div class="menu-option">
+              <MenuItem
+                let:active
+                class="menu-selection"
+                title="Clear images from current collection"
+              >
+                <span
+                  class:active
+                  on:click={ClearCurrentSelectedImgs}
+                  on:keypress={ClearCurrentSelectedImgs}
+                  >Clear Current Selected Images</span
+                >
+              </MenuItem>
+              <MenuItem
+                let:active
+                class="menu-selection"
+                title="Clear all images selected"
+              >
+                <span
+                  class:active
+                  on:click={ClearAllSelectedImgs}
+                  on:keypress={ClearAllSelectedImgs}
+                  >Clear All Selected Images</span
+                >
+              </MenuItem>
+              <MenuItem
+                let:active
+                class="menu-selection"
+                title="Show all images selected"
+              >
+                <span
+                  class:active
+                  on:click={ShowSelectedImgs}
+                  on:keypress={ShowSelectedImgs}>Only Show Selected Images</span
+                >
+              </MenuItem>
+              <MenuItem
+                let:active
+                class="menu-selection"
+                title="Hide selected images"
+              >
+                <span
+                  class:active
+                  on:click={HideSelectedImgs}
+                  on:keypress={HideSelectedImgs}>Hide Selected Images</span
+                >
+              </MenuItem>
+            </div>
+          </MenuItems>
+        </Menu>
+        <VisToggle
+          message={'Group Images'}
+          activeColor="blueviolet"
+          inactiveColor="#540077"
+        />
       </div>
       <div style="display:flex;color:#f3edeb;">
         <div class="collection-count">
@@ -168,8 +241,7 @@
         </div>
       </div>
     </div>
-    <div />
-    <div style="position:relative;">
+    <div class="collection-area" style:height="{collectionHeight}px">
       {#each imgInfo as img, i}
         <DrawThumbnail
           left={img.left}
@@ -184,6 +256,7 @@
           }}
         />
       {/each}
+      <div class="bottom-spacing" style:top="{heightSize}px" />
     </div>
   </div>
 </div>
@@ -208,24 +281,6 @@
     justify-content: space-between;
     background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
   }
-  .menu-selection {
-    cursor: pointer;
-    margin: 0px -0.5rem;
-    padding: 0.25rem 0.5rem;
-    font-weight: bold;
-    display: flex;
-    -webkit-box-pack: center;
-    place-content: center;
-    flex-direction: column;
-    text-decoration: none;
-    color: rgb(179, 179, 179);
-  }
-
-  .menu-select {
-    position: relative;
-    align-items: center;
-    display: flex;
-  }
 
   .menu-option {
     background-color: rgb(26, 26, 26);
@@ -245,17 +300,31 @@
     right: unset;
   }
 
-  .img-select {
+  :global(.collection-menu .img-select) {
     width: 50px;
     padding: 0.25rem 0.75rem;
     line-height: 2rem;
     border-radius: 1rem;
     border: none;
+    align-items: center;
     background-color: blueviolet;
     color: rgb(255, 255, 255);
     cursor: pointer;
     display: flex;
     justify-content: space-between;
+  }
+
+  :global(.collection-menu .menu-selection) {
+    cursor: pointer;
+    margin: 0px -0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-weight: bold;
+    display: flex;
+    -webkit-box-pack: center;
+    place-content: center;
+    flex-direction: column;
+    text-decoration: none;
+    color: rgb(179, 179, 179);
   }
   .svg-icon {
     user-select: none;
@@ -307,7 +376,11 @@
 	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
 	background-color: #555;
 } */
-
+  .collection-area {
+    position: relative;
+    overflow-y: scroll;
+    padding-bottom: 10px;
+  }
   .collection-container {
     position: absolute;
     background-color: lightgray;
@@ -315,5 +388,10 @@
     top: 360px;
     border: 1px solid rgb(226, 226, 226);
     /* overflow-y: scroll; */
+  }
+  .bottom-spacing {
+    height: 10px;
+    width: 100%;
+    position: absolute;
   }
 </style>

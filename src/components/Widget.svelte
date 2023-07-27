@@ -22,6 +22,7 @@
       $openDetailView = false;
     }
   };
+
   let folderName = '';
   $: if ($dataset['meta']) {
     folderName = $dataset['meta']['folderName'];

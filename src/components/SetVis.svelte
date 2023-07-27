@@ -9,7 +9,7 @@
     confidence,
     breakdown,
     windowWidth,
-    menuWidth
+    menuWidth,
   } from '../stores';
   import type { DataRes, ImgData, Data } from '../types';
   import { color, colorTypes } from '../ulit';
@@ -17,6 +17,7 @@
   import VisButton from './vis/VisButton.svelte';
   import ColorLegend from './vis/ColorLegend.svelte';
   import Tooltip from './vis/Tooltip.svelte';
+  import VisToggle from './vis/VisToggle.svelte';
 
   $: mouseOverI = -1;
   $: colSelected = -1;
@@ -30,9 +31,12 @@
     circleRadius: 9,
     circleGap: 3,
     setSpacing: 80,
+    breakdownY: 70,
   };
   let setFliter: Array<number> = [];
   let setData: Array<ColumnType> = [];
+  let showEmptySets = false;
+  let showTotalSets = false;
 
   metaModel.forEach((model: string, i: number) => {
     $colorMap[model] = i % color.length;
@@ -94,58 +98,142 @@
     }
   }
 
+  function contained(firstModels: string, secondModels: string) {
+    const firstList = firstModels.split(',');
+    const secondList = secondModels.split(',');
+
+    for (const name of firstList) {
+      if (!secondList.includes(name)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   function updateData(
     dset: Data,
     iou: number,
     confid: [number, number],
-    breakdown: boolean
+    breakdown: boolean,
+    showEmptySets: boolean,
+    showTotalSets: boolean
   ) {
-    let data: Array<ColumnType> = [];
-    Object.entries(dset.models).forEach(([name, arryList]) => {
-      //Generates Circle information
-      let models: Array<number> = [];
-      let modelRange: Array<number> = [];
-      metaModel.forEach((model: string, ind: number) => {
-        const nameArry = name.split(',');
-        if (modelExists(nameArry, model)) {
-          models.push(2);
-          modelRange.push(ind);
-        } else {
-          models.push(0);
+    if (!showTotalSets) {
+      let data: Array<ColumnType> = [];
+      Object.entries(dset.models).forEach(([name, arryList]) => {
+        //Generates Circle information
+        let models: Array<number> = [];
+        let modelRange: Array<number> = [];
+        metaModel.forEach((model: string, ind: number) => {
+          const nameArry = name.split(',');
+          if (modelExists(nameArry, model)) {
+            models.push(2);
+            modelRange.push(ind);
+          } else {
+            models.push(0);
+          }
+        });
+        let column: ColumnType = {
+          name: name,
+          models: models,
+          modelRange: modelRange,
+          truePos: 0,
+          falsePos: 0,
+          type: {
+            duplicate: 0,
+            low_threshold: 0,
+            far_away: 0,
+            wrong_class: 0,
+          },
+          data: arryList,
+        };
+        //determine the number of postives
+        arryList.forEach((obj) => {
+          Object.entries(obj.detections).forEach(([type, info]) => {
+            let positivity = determinePostivity(info, confid, iou);
+            if (positivity === 2) {
+              column['truePos'] += 1;
+            } else if (positivity === 1) {
+              column['falsePos'] += 1;
+              column.type[info.category] += 1;
+            }
+          });
+        });
+        if (showEmptySets || column.truePos + column.falsePos > 0) {
+          data.push(column);
         }
       });
-      let column: ColumnType = {
-        name: name,
-        models: models,
-        modelRange: modelRange,
-        truePos: 0,
-        falsePos: 0,
-        type: {
-          duplicate: 0,
-          low_threshold: 0,
-          far_away: 0,
-          wrong_class: 0,
-        },
-        data: arryList,
-      };
-      //determine the number of postives
-      arryList.forEach((obj) => {
-        Object.entries(obj.detections).forEach(([type, info]) => {
-          let positivity = determinePostivity(info, confid, iou);
-          if (positivity === 2) {
-            column['truePos'] += 1;
-          } else if (positivity === 1) {
-            column['falsePos'] += 1;
-            column.type[info.category] += 1;
+      return data;
+    } else {
+      let totalModels: { [key: string]: DataRes[] } = {};
+      Object.entries(dset.models).forEach(([nameFirst, arryListFirst]) => {
+        totalModels[nameFirst] = [...arryListFirst];
+        Object.entries(dset.models).forEach(([nameSecond, arryListSecond]) => {
+          if (nameFirst !== nameSecond && contained(nameFirst, nameSecond)) {
+            totalModels[nameFirst] = totalModels[nameFirst].concat([
+              ...arryListSecond,
+            ]);
           }
         });
       });
-      data.push(column);
-    });
-    return data;
+
+      let data: Array<ColumnType> = [];
+
+      Object.entries(totalModels).forEach(([name, arryList]) => {
+        //Generates Circle information
+        let models: Array<number> = [];
+        let modelRange: Array<number> = [];
+        metaModel.forEach((model: string, ind: number) => {
+          const nameArry = name.split(',');
+          if (modelExists(nameArry, model)) {
+            models.push(2);
+            modelRange.push(ind);
+          } else {
+            models.push(0);
+          }
+        });
+        let column: ColumnType = {
+          name: name,
+          models: models,
+          modelRange: modelRange,
+          truePos: 0,
+          falsePos: 0,
+          type: {
+            duplicate: 0,
+            low_threshold: 0,
+            far_away: 0,
+            wrong_class: 0,
+          },
+          data: arryList,
+        };
+        //determine the number of postives
+        arryList.forEach((obj) => {
+          Object.entries(obj.detections).forEach(([type, info]) => {
+            let positivity = determinePostivity(info, confid, iou);
+            if (positivity === 2) {
+              column['truePos'] += 1;
+            } else if (positivity === 1) {
+              column['falsePos'] += 1;
+              column.type[info.category] += 1;
+            }
+          });
+        });
+        if (showEmptySets || column.truePos + column.falsePos > 0) {
+          data.push(column);
+        }
+      });
+      return data;
+    }
   }
 
-  $: data = updateData($dataset, $IOU, $confidence, $breakdown);
+  $: data = updateData(
+    $dataset,
+    $IOU,
+    $confidence,
+    $breakdown,
+    showEmptySets,
+    showTotalSets
+  );
 
   $: maxY = d3.max(data, (d) => d.truePos + d.falsePos);
   $: extentY = [0, maxY === undefined ? 100 : maxY];
@@ -156,7 +244,7 @@
     .range([modelRow(metaModel.length), padding.top]);
 
   let yTicks: Array<number> = [];
-  $: step = Math.ceil((extentY[1] - extentY[0]) / config.ytickCount / 5) * 5;
+  $: step = Math.ceil((extentY[1] - extentY[0]) / config.ytickCount / 10) * 10;
 
   function updateTicks(extentY: number[]) {
     yTicks = [];
@@ -262,7 +350,7 @@
         });
         setData[0].falsePos += ele.falsePos;
         setData[0].truePos += ele.truePos;
-        const keys = Object.keys(ele.type) as Array<keyof typeof ele.type>
+        const keys = Object.keys(ele.type) as Array<keyof typeof ele.type>;
         for (const key of keys) {
           setData[0].type[key] += ele.type[key];
         }
@@ -273,9 +361,26 @@
   function updateSetFilters(idx: number, value: number) {
     setFliter[idx] = value;
   }
+  function updateSelection(iou: number, confidence: [number, number]) {
+    selectSet();
+  }
+
+  function updateShowEmptySets(
+    event: Event & { currentTarget: HTMLInputElement }
+  ) {
+    showEmptySets = event?.currentTarget?.checked;
+  }
+
+  function updateShowTotalSets(
+    event: Event & { currentTarget: HTMLInputElement }
+  ) {
+    showTotalSets = event?.currentTarget?.checked;
+  }
 
   $: svgWidth = columnSpacing(setData.length + 1 + data.length);
-
+  $: if (setData.length > 0) {
+    updateSelection($IOU, $confidence);
+  }
   let evt: CustomEvent<any>;
   let hideTooltip = true;
   const leftPanelWidth =
@@ -283,11 +388,10 @@
     config.colGap +
     config.circleRadius +
     config.setSpacing;
-  
 </script>
 
-  <div class="set-vis-container" style:width="100%" style:height="{winHeight}px">
-    <div class="left-panel">
+<div class="set-vis-container" style:width="100%" style:height="{winHeight}px">
+  <div class="left-panel">
     <svg
       style:width="{leftPanelWidth}px"
       style:height="{winHeight}px"
@@ -310,9 +414,11 @@
             text-anchor="end"
             alignment-baseline="middle"
             class="model-text"
-            >{modelName.length * 7 < config.maxTextSize
+          >
+            <title>{modelName}</title>
+            {modelName.length * 7.5 < config.maxTextSize
               ? modelName
-              : modelName.slice(0, config.maxTextSize / 7) + '...'}</text
+              : modelName.slice(0, config.maxTextSize / 7 - 3) + '...'}</text
           >
           <circle
             cx={setSpacing(0)}
@@ -381,7 +487,7 @@
       </g>
       <g class="color-legend">
         <g>
-          <g transform="translate(2 36)">
+          <g transform="translate(2 {config.breakdownY - 6})">
             <svg
               fill="#000000"
               height="10px"
@@ -402,7 +508,7 @@
           </g>
           <text
             x={16}
-            y={42}
+            y={config.breakdownY}
             text-anchor="start"
             alignment-baseline="middle"
             font-weight="bold"
@@ -415,28 +521,28 @@
         {#if $breakdown}
           <ColorLegend
             x={20}
-            y={42 + 1 * 15}
+            y={config.breakdownY + 1 * 15}
             color={colorTypes['low_threshold']}
             name={'low_threshold'}
             type={'low_threshold'}
           />
           <ColorLegend
             x={20}
-            y={42 + 2 * 15}
+            y={config.breakdownY + 2 * 15}
             color={colorTypes['wrong_class']}
             name={'Wrong Class'}
             type={'wrong_class'}
           />
           <ColorLegend
             x={20}
-            y={42 + 3 * 15}
+            y={config.breakdownY + 3 * 15}
             color={colorTypes['far_away']}
             name={'Far Away'}
             type={'far_away'}
           />
           <ColorLegend
             x={20}
-            y={42 + 4 * 15}
+            y={config.breakdownY + 4 * 15}
             color={colorTypes['duplicate']}
             name={'Duplicate'}
             type={'duplicate'}
@@ -445,7 +551,7 @@
       </g>
       <g class="y-axis">
         <text
-          x={columnSpacing(0) - 30}
+          x={leftPanelWidth - 24}
           y="15"
           text-anchor="end"
           alignment-baseline="middle">Detections</text
@@ -453,22 +559,35 @@
         {#each yTicks as tick}
           <g
             class="tick tick-{tick}"
-            transform="translate({columnSpacing(0) -
-              config.circleRadius -
-              config.circleGap}, {y(tick)})"
+            transform="translate({leftPanelWidth}, {y(tick)})"
           >
             <text x="-3" alignment-baseline="middle">{tick}</text>
           </g>
         {/each}
       </g>
     </svg>
+    <div style:position="absolute" style:left="3px" style:top="5px">
+      <VisToggle
+        message="Empty Set"
+        enabled={showEmptySets}
+        update={updateShowEmptySets}
+      />
+    </div>
+    <div style:position="absolute" style:left="3px" style:top="32px">
+      <VisToggle
+        message="Difference"
+        enabled={showTotalSets}
+        update={updateShowTotalSets}
+      />
+    </div>
   </div>
-  <div class="set-vis"
-      style:left="{leftPanelWidth}px"
-      style:width="{$windowWidth - $menuWidth - leftPanelWidth}px"
-      style:height="{winHeight}px"
-      style="Max-Width:{$windowWidth - $menuWidth - leftPanelWidth}px"
-      >
+  <div
+    class="set-vis"
+    style:left="{leftPanelWidth}px"
+    style:width="{$windowWidth - $menuWidth - leftPanelWidth}px"
+    style:height="{winHeight}px"
+    style="Max-Width:{$windowWidth - $menuWidth - leftPanelWidth}px"
+  >
     <svg
       style:width="{svgWidth}px"
       style:height="{winHeight}px"
@@ -589,20 +708,21 @@
         </g>
       {/each}
     </svg>
+
     {#if hideTooltip !== true}
-    <Tooltip
-      {evt}
-      let:detail
-      width={$windowWidth - $menuWidth - leftPanelWidth}
-    >
-      <!-- For the tooltip, do another data join because the hover event only has the data from the geography data -->
-      {@const tooltipData = { ...detail.props }}
-      {#each Object.entries(tooltipData) as [key, value]}
-        {@const keyCapitalized = key.replace(/^\w/, (d) => d.toUpperCase())}
-        <div class="row"><span>{keyCapitalized}:</span> {value}</div>
-      {/each}
-    </Tooltip>
-  {/if}
+      <Tooltip
+        {evt}
+        let:detail
+        width={$windowWidth - $menuWidth - leftPanelWidth}
+      >
+        <!-- For the tooltip, do another data join because the hover event only has the data from the geography data -->
+        {@const tooltipData = { ...detail.props }}
+        {#each Object.entries(tooltipData) as [key, value]}
+          {@const keyCapitalized = key.replace(/^\w/, (d) => d.toUpperCase())}
+          <div class="row"><span>{keyCapitalized}:</span> {value}</div>
+        {/each}
+      </Tooltip>
+    {/if}
   </div>
 </div>
 

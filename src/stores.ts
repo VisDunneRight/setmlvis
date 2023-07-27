@@ -96,11 +96,12 @@ export let menuWidth: Writable<number>;
 export let selectedImg: Writable<ImgData | undefined>;
 export let selectedImgIdx: Writable<number>;
 export let openDetailView: Writable<boolean>;
+export let openCollectionMenu: Writable<boolean>;
 export let breakdown: Writable<boolean>;
 export let colorMap: Writable<StringNumMap>;
 export let confidence: Writable<[number, number]>;
 export let detectionSize: Writable<[number, number]>;
-export let topHeight: Writable<number>; 
+export let topHeight: Writable<number>;
 
 // Set the model for each store you create.
 export function setStoreModels(model: DOMWidgetModel): void {
@@ -119,11 +120,15 @@ export function setStoreModels(model: DOMWidgetModel): void {
     model
   );
   selectedCol = createSyncedWidget<ImgData[]>('selectedCol', [], model);
-  selectedImgs = createSyncedWidget<Record<string,ImgData>>('selectedImgs', {}, model);
+  selectedImgs = createSyncedWidget<Record<string, ImgData>>(
+    'selectedImgs',
+    {},
+    model
+  );
   num_instances = createSyncedWidget<number>('num_instances', 0, model);
   height = createSyncedWidget<number>('height', 800, model);
   IOU = createSyncedWidget<number>('IOU', 0.8, model);
-  
+
   //Stores that are not synced with python
   topHeight = writable(300);
   windowWidth = writable(600);
@@ -131,8 +136,9 @@ export function setStoreModels(model: DOMWidgetModel): void {
   selectedImg = writable(undefined);
   selectedImgIdx = writable(-1);
   openDetailView = writable(false);
+  openCollectionMenu = writable(false);
   breakdown = writable(false);
   colorMap = writable<StringNumMap>({});
-  confidence = writable<[number, number]>([0, 1.0]);
-  detectionSize = writable<[number, number]>([0, 1.0]);
+  confidence = writable<[number, number]>([0.7, 1.0]);
+  detectionSize = writable<[number, number]>([0.01, 0.4]);
 }

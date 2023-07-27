@@ -156,3 +156,8 @@ setmlvis/labextension/*.tgz
 setmlvis/labextension
 examples/data/*
 examples/twentyFiveImages.json
+examples/satellite_data_formatted/*
+examples/droneVideoColorCorrectFormat/*
+examples/droneProjectedData/*
+examples/droneVideoColorCorrectFormat.json
+examples/satellite_data.json

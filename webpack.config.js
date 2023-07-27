@@ -14,6 +14,12 @@ const rules = [
       preprocess: SveltePreprocess(),
     },
   },
+  {
+    test: /\.m?js$/,
+    resolve: {
+      fullySpecified: false,
+    },
+  },
 ];
 
 // Packages that shouldn't be bundled but loaded at runtime
