@@ -48,7 +48,7 @@ pip install -e ".[test, examples]"
 You will need `jupyter lab` 3.x or `jupyter notebook` installed. If you don't have it, run, e.g.:
 
 ```bash
-pip install jupyterlab==3
+pip install jupyterlab<4
 ```
 
 When developing your extensions, you need to manually enable your extensions with the
