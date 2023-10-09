@@ -4,7 +4,6 @@
 [![Build Status](https://travis-ci.org/VisDunneRight/setmlvis.svg?branch=master)](https://travis-ci.org/VisDunneRight/setmlvis)
 [![codecov](https://codecov.io/gh/VisDunneRight/setmlvis/branch/master/graph/badge.svg)](https://codecov.io/gh/VisDunneRight/setmlvis)
 
-
 A new visualization method for comparing different models for bounding box detection.
 
 ## Installation
@@ -17,6 +16,7 @@ pip install setmlvis
 
 If you are using Jupyter Notebook 5.2 or earlier, you may also need to enable
 the nbextension:
+
 ```bash
 jupyter nbextension enable --py [--sys-prefix|--user|--system] setmlvis
 ```
@@ -24,27 +24,61 @@ jupyter nbextension enable --py [--sys-prefix|--user|--system] setmlvis
 ## Development Installation
 
 Create a dev environment:
-```bash
-conda create -n setmlvis-dev -c conda-forge nodejs yarn python jupyterlab
-conda activate setmlvis-dev
-```
+
+1. Conda
+
+    ```bash
+    conda create -n setmlvis-dev -c conda-forge nodejs yarn python jupyterlab
+    conda activate setmlvis-dev
+    ```
+
+2. `venv`
+
+    ```bash
+    py -m venv env
+    .\env\Scripts\activate
+    ```
 
 Install the python. This will also build the TS package.
+
 ```bash
 pip install -e ".[test, examples]"
 ```
 
-When developing your extensions, you need to manually enable your extensions with the
-notebook / lab frontend. For lab, this is done by the command:
+You will need `jupyter lab` 3.x or `jupyter notebook` installed. If you don't have it, run, e.g.:
 
+```bash
+pip install jupyterlab<4
 ```
+
+When developing your extensions, you need to manually enable your extensions with the
+notebook / lab frontend. You need `yarn` installed first. If you don't, run:
+
+```bash
+npm install yarn
+```
+
+Then, to enable the extensions for lab, run the command:
+
+```bash
 jupyter labextension develop --overwrite .
+```
+
+and
+
+```bash
 yarn run build
+```
+
+or
+
+```bash
+.\node_modules\yarn\bin\yarn run build
 ```
 
 For classic notebook, you need to run:
 
-```
+```bash
 jupyter nbextension install --sys-prefix --symlink --overwrite --py setmlvis
 jupyter nbextension enable --sys-prefix --py setmlvis
 ```
