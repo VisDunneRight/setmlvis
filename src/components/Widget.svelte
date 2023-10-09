@@ -27,7 +27,7 @@
   $: if ($dataset['meta']) {
     folderName = $dataset['meta']['folderName'];
   }
-
+  $: console.log($dataset);
   onMount(() => {
     // Adapted from https://blog.sethcorker.com/question/how-do-you-use-the-resize-observer-api-in-svelte/
     // and https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver

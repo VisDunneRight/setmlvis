@@ -16,7 +16,7 @@
   // Add svg/bounding box
   // Add Labels to indicate confidence interval
   export let folderName: string;
-  $: compWidth = $windowWidth * 0.95;
+  $: compWidth = $windowWidth * 0.95 - 300;
   $: compHeight = $height * 0.9;
   $: imgWidth = $selectedImg === undefined ? 0 : $selectedImg.imgSize[0];
   $: imgHeight = $selectedImg === undefined ? 0 : $selectedImg.imgSize[1];
@@ -55,8 +55,6 @@
     $selectedImg = $selectedCol[value];
     $selectedImgIdx = value;
   }
-
-  
 </script>
 
 <div id="model" class="modal {$openDetailView ? 'modalon' : ''}">

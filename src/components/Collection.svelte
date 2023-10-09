@@ -74,6 +74,7 @@
           data: img,
           height: startingHeight,
         });
+        left += width + gap;
         currentWidth = width;
       }
     });
@@ -140,6 +141,7 @@
     }
     $selectedCol = imgSelection;
   }
+  $: console.log($selectedCol);
 </script>
 
 <div

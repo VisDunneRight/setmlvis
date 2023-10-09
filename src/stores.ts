@@ -125,6 +125,7 @@ export function setStoreModels(model: DOMWidgetModel): void {
     {},
     model
   );
+  console.log(model);
   num_instances = createSyncedWidget<number>('num_instances', 0, model);
   height = createSyncedWidget<number>('height', 800, model);
   IOU = createSyncedWidget<number>('IOU', 0.8, model);
