@@ -22,6 +22,7 @@
   $: mouseOverI = -1;
   $: colSelected = -1;
   $: barSelected = '';
+
   const metaModel = $dataset['meta']['modelNames'];
   const padding = { top: 20, right: 15, bottom: 22, left: 10 };
   const config = {
@@ -36,7 +37,7 @@
   let setFliter: Array<number> = [];
   let setData: Array<ColumnType> = [];
   let showEmptySets = false;
-  let showTotalSets = false;
+  let showTotalSets = true;
 
   metaModel.forEach((model: string, i: number) => {
     $colorMap[model] = i % color.length;
@@ -52,6 +53,7 @@
     modelRange: Array<number>;
     truePos: number;
     falsePos: number;
+    falseNeg: number;
     type: {
       duplicate: number;
       low_threshold: number;
@@ -118,7 +120,7 @@
     showEmptySets: boolean,
     showTotalSets: boolean
   ) {
-    if (!showTotalSets) {
+    if (showTotalSets) {
       let data: Array<ColumnType> = [];
       Object.entries(dset.models).forEach(([name, arryList]) => {
         //Generates Circle information
@@ -181,6 +183,9 @@
 
       Object.entries(totalModels).forEach(([name, arryList]) => {
         //Generates Circle information
+        if (name.split(',').length !== 2) {
+          return;
+        }
         let models: Array<number> = [];
         let modelRange: Array<number> = [];
         metaModel.forEach((model: string, ind: number) => {
@@ -198,6 +203,7 @@
           modelRange: modelRange,
           truePos: 0,
           falsePos: 0,
+          falseNeg: 0,
           type: {
             duplicate: 0,
             low_threshold: 0,
@@ -209,6 +215,7 @@
         //determine the number of postives
         arryList.forEach((obj) => {
           Object.entries(obj.detections).forEach(([type, info]) => {
+            console.log(info, confid, iou);
             let positivity = determinePostivity(info, confid, iou);
             if (positivity === 2) {
               column['truePos'] += 1;

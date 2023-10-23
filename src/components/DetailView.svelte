@@ -9,6 +9,7 @@
   } from '../stores';
 
   import DrawTextbox from './vis/DrawTextbox.svelte';
+  import RightPanel from './detail/RightPanel.svelte';
   import { colorMap } from '../stores';
   import { color } from '../ulit';
 
@@ -151,7 +152,9 @@
               </div>
             </div>
           </div>
-          <div class="model-menu" />
+          <div class="model-menu">
+            <RightPanel />
+          </div>
         {/if}
       </div>
     </div>
@@ -177,7 +180,7 @@
     min-width: 200px;
     box-sizing: border-box;
     flex-shrink: 0;
-    background-color: blue;
+    background-color: #424242;
   }
 
   .model-img {

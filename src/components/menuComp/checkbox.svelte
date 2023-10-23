@@ -6,12 +6,18 @@
 </script>
 
 <label class="container">
-  <input type="checkbox" checked={checked} on:click={(e)=>{updateSelection(!checked)}}>
+  <input
+    type="checkbox"
+    {checked}
+    on:click={(e) => {
+      updateSelection(!checked);
+    }}
+  />
   <span class="checkmark">
     {#if checked === true}
-      <Checked size={25}/>
+      <Checked size={25} />
     {:else}
-      <Unchecked size={25}/>
+      <Unchecked size={25} />
     {/if}
   </span>
 </label>
@@ -26,7 +32,7 @@
     padding-top: 5px;
     line-height: 1.5;
     cursor: unset;
-    width:24px;
+    width: 24px;
   }
 
   /* Hide the browser's default checkbox */
@@ -43,12 +49,11 @@
     height: 25px;
     width: 25px;
     cursor: pointer;
-  
   }
 
   /* Create the checkmark/indicator (hidden when not checked) */
   .checkmark:after {
-    content: "";
+    content: '';
     position: absolute;
     display: none;
   }

@@ -1,8 +1,15 @@
 <script>
   export let size = 25;
+  export let color = '#b39ddb';
 </script>
 
-<svg fill={'#b39ddb'}  width={size} height={size} class="svg-icon" viewBox="0 0 279.3 279.3">
+<svg
+  fill={color}
+  width={size}
+  height={size}
+  class="svg-icon"
+  viewBox="0 0 279.3 279.3"
+>
   <path
     stroke-width="1"
     d="M224,279.3H55.3C24.8,279.3,0,254.5,0,224V55.3C0,24.8,24.8,0,55.3,0H224c30.5,0,55.3,24.8,55.3,55.3V224
