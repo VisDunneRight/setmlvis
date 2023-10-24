@@ -20,6 +20,12 @@ prune docs/dist
 
 # Examples
 graft examples
+prune examples/data
+prune examples/droneProjectedData
+prune examples/droneVideoColorCorrectFormat
+prune examples/satellite_data_formatted
+prune examples/twoModels
+prune examples/*.json
 
 # Tests
 graft tests
