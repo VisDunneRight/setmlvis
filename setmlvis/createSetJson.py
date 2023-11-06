@@ -1,8 +1,17 @@
 import os
 import itertools
 import json
+import time
 from PIL import Image
 from shapely.geometry import Polygon
+from shapely.wkt import loads
+from shapely import to_wkb
+from shapely import from_wkb
+from rtree import index
+import multiprocessing as mp
+
+DEBUG = False
+FULLDEBUG = False
 
 
 # input Folder Name
@@ -29,18 +38,25 @@ def createSetJson(
     Returns:
     None
     """
-
+    start = time.time()
     modelNames = getModelNames(folderName)
     emptyDictionary = createEmptyDictionary(modelNames)
     allFilesDictionary = parseInputFolder(folderName, objectClass, modelNames)
+    diff = time.time()
+    if DEBUG:
+        print("GetModel, Empty, Parse:", diff - start, "s")
 
     finalDictionary = fillDictionary(
         folderName, emptyDictionary, allFilesDictionary, modelNames, setIou, objectClass
     )
+    finalTime = time.time()
+    if DEBUG:
+        print("finalDictionary:", finalTime - diff, "s")
     finalDictionaryWithMetadata = generateMetadata(
         folderName, finalDictionary, modelNames, setIou
     )
-
+    if DEBUG:
+        print("MetaDate:", time.time() - finalTime, "s")
     if jsonName != None:
         generateJson(finalDictionaryWithMetadata, jsonName)
     return finalDictionaryWithMetadata
@@ -89,6 +105,7 @@ def getModelNames(directory: str) -> list[str]:
 def createEmptyDictionary(modelNames: list[str]) -> dict[str, list[str]]:
     """
     Create an empty dictionary with keys formed by combinations of the specified model names.
+    m1,m2,m3 == [m1, m2, m3, m1m2, m1m2, m2m3, m1m2m3]
 
     Parameters:
     modelNames (List[str]): A list of the names of the prediction models.
@@ -156,6 +173,32 @@ def parseInputFolder(
     return allFilesDict
 
 
+def initPool(folName, modNames, iout, filClass, idCount):
+    global folderName
+    global modelNames
+    global iou
+    global filterClass
+    global idCounter
+
+    folderName = folName
+    modelNames = modNames
+    iou = iout
+    filterClass = filClass
+    idCounter = idCount
+
+
+def poolFillDict(item):
+    [key, value] = item
+    start = time.time()
+    bigDict = getEachImageInformation(
+        folderName, key, value, iou, modelNames, filterClass, idCounter
+    )
+    end = time.time()
+    if DEBUG:
+        print("Each", key, end - start)
+    return bigDict
+
+
 def fillDictionary(
     folderName, emptyDictionary, allFilesDictionary, modelNames, iou, filterClass
 ):
@@ -196,12 +239,25 @@ def fillDictionary(
         where model1, model2, ..., modelN are the names of the models used to generate the bounding boxes.
     """
     idCounter = Counter()
-    for key, value in allFilesDictionary.items():
-        bigDict = getEachImageInformation(
-            folderName, key, value, iou, modelNames, filterClass, idCounter
-        )
-        for key, value in bigDict.items():
+    pool = mp.Pool(
+        initializer=initPool,
+        initargs=(folderName, modelNames, iou, filterClass, idCounter),
+    )
+    res = pool.map(poolFillDict, allFilesDictionary.items())
+    for image in res:
+        for key, value in image.items():
             emptyDictionary[key].append(value)
+    # idCounter = Counter()
+    # for key, value in allFilesDictionary.items():
+    #     start = time.time()
+    #     bigDict = getEachImageInformation(
+    #         folderName, key, value, iou, modelNames, filterClass, idCounter
+    #     )
+    #     for key, value in bigDict.items():
+    #         emptyDictionary[key].append(value)
+    #     end = time.time()
+    #     if DEBUG:
+    #         print("Each", key, end - start)
     return emptyDictionary
 
 
@@ -220,12 +276,15 @@ def getEachImageInformation(
     used_gt_by_image = (
         {}
     )  # Initialize a dictionary to store used ground truth bounding boxes for each image
-
+    count = 0
+    count2 = 0
     for L in range(len(modelNames) + 1, -1, -1):
         reduceInput(removeItems, inp)
-
+        count += 1
         for subset in itertools.combinations(modelNames, L):
             if len(subset) != 0:
+                count2 += 1
+                start = time.time()
                 dictionary, falseNegatives, inp, previous_gt_shapes = getRealSets(
                     inp,
                     subset,
@@ -238,7 +297,8 @@ def getEachImageInformation(
                     used_gt_by_image,
                     idCounter,
                 )
-
+                if FULLDEBUG:
+                    print("\t subSet:", time.time() - start)
                 stringTotal = ""
                 for s in subset:
                     stringTotal = stringTotal + s + ","
@@ -260,7 +320,6 @@ def getEachImageInformation(
                         used_gt_by_image[imageName].append(box)
 
                 bigDict[stringTotal] = {"detections": dictionary, "FN": falseNegatives}
-
     return bigDict
 
 
@@ -293,29 +352,112 @@ def getRealSets(
     """
     dictionary = {}
     arr = []
+    grpMerch = []
 
     # Create a list of the input bounding boxes from the subset
+    indexCount = 0
+    grpCount = 0
     for s in subset:
-        arr.append(inp[s])
-
+        for obj in inp[s]:
+            arr.append((indexCount, obj))
+            indexCount += 1
+            grpMerch.append(grpCount)
+        grpCount += 1
     dictRank = []
 
-    # Calculate the IOU between each combination of input bounding boxes
-    for x in itertools.product(*arr):
-        intersection = getIntersection(x)
-        if intersection.area == 0:
+    start = time.time()
+    # Create RTree
+    idx = index.Index()
+    # populates Rtree with rectangle
+    for dect in arr:
+        idx.insert(
+            dect[0],
+            (
+                float(dect[1][1]),
+                float(dect[1][2]),
+                float(dect[1][3]),
+                float(dect[1][4]),
+            ),
+        )
+    intVisited = {}
+    uniVisited = {}
+    # For each rectangle check the interactions and create
+    for dect in arr:
+        # Get the all rectangles that intersect
+        res = list(
+            idx.intersection(
+                (
+                    float(dect[1][1]),
+                    float(dect[1][2]),
+                    float(dect[1][3]),
+                    float(dect[1][4]),
+                )
+            )
+        )
+        # Group the ids together
+        grps = []
+        for i in range(grpCount):
+            grps.append([])
+        for id in res:
+            grps[grpMerch[id]].append(arr[id])
+        # Skip if one of the grps are empty
+        skip = False
+        for setGrp in grps:
+            if len(setGrp) == 0:
+                skip = True
+        if skip:
             continue
-        union = getUnion(x)
-        IOU = intersection.area / union.area
-        tup = (IOU, x)
-        dictRank.append(tup)
+        # Create the combo and get IOU
+        for x in itertools.product(*grps):
+            intersection = getIntersectionVisit(x, intVisited)
+            if intersection.area == 0:
+                continue
+            union = getUnionVisited(x, uniVisited)
+            IOU = intersection.area / union.area
+            resX = []
+            for val in x:
+                resX.append(val[1])
+            # print(
+            #     intersection.area,
+            #     getIntersection(resX).area,
+            #     union.area,
+            #     getUnion(resX).area,
+            # )
+            tup = (IOU, resX)
+            dictRank.append(tup)
 
+    # [1,2,3],[4,5,6],[7,8,9,10] =>
+    # [1,2],[4,5],[7,8] =>
+    # [1,4,7],[1,4,8]
+    #
+
+    # # Old Version
+    # for s in subset:
+    #     arr.append(inp[s])
+
+    # dictRank = []
+    # # Calculate the IOU between each combination of input bounding boxes
+    # for x in itertools.product(*arr):
+    #     intersection = getIntersection(x)
+    #     if intersection.area == 0:
+    #         continue
+    #     union = getUnion(x)
+    #     IOU = intersection.area / union.area
+    #     tup = (IOU, x)
+    #     dictRank.append(tup)
+
+    afterProduct = time.time()
+    if FULLDEBUG:
+        print("        Product Calculate:", round(afterProduct - start, 2))
     # Sort the list of IOU values in descending order
     sortedList = sorted(dictRank, key=lambda x: x[0], reverse=True)
+    # print(len(sortedList))
     values_to_remove = []
+    afterSort = time.time()
+    # if FULLDEBUG:
+    #    print("        sort:", round(afterSort - afterProduct, 2))
 
     # Keep only the bounding boxes with IOU values higher than the threshold
-
     count = 0
     for key, value in sortedList:
         if key != 0:
@@ -351,6 +493,9 @@ def getRealSets(
                     idCounter.increment()
                     # dictionary.append(newDict)
 
+    keepIOU = time.time()
+    # if FULLDEBUG:
+    #   print("        keepIOU:", round(keepIOU - afterSort, 2))
     gtArray = inp["ground_truth"]
 
     gtTest = []
@@ -401,10 +546,12 @@ def getRealSets(
                 item["iouGT"] = gt["gtIOU"]
                 item["gtShape"] = gt["gtShape"]
 
+    classification = time.time()
+    # if FULLDEBUG:
+    #   print("        classification:", round(classification - keepIOU, 2))
     falseNegatives = findFalseNegatives(gtArray, filtered_list)
 
     # Add these lines to initialize the false positive categories
-
     for key, item in dictionary.items():
         if item["iouGT"] == 0.0:
             duplicate_detected = False
@@ -463,6 +610,10 @@ def getRealSets(
             item[
                 "category"
             ] = "low_threshold"  # Add category information for low threshold detections
+
+    endclass = time.time()
+    # if FULLDEBUG:
+    #   print("        endclass:", round(endclass - classification, 2))
 
     # # Add these lines to store false positive categories in the dictionary
     # dictionary['duplicate_detections'] = duplicate_detections
@@ -537,21 +688,21 @@ def findFalseNegatives(groundTruthBoxes, overlappedBoxes):
     return result
 
 
+def createPolygon(rectangle):
+    xL = float(rectangle[1])
+    xR = float(rectangle[3])
+    yT = float(rectangle[2])
+    yL = float(rectangle[4])
+    return Polygon([(xL, yT), (xR, yT), (xR, yL), (xL, yL)])
+
+
 def getUnion(boundingBoxArray):
     unionPolygon = None
-    xL = float(boundingBoxArray[0][1])
-    xR = float(boundingBoxArray[0][3])
-    yT = float(boundingBoxArray[0][2])
-    yL = float(boundingBoxArray[0][4])
-    unionPolygon = Polygon([(xL, yT), (xR, yT), (xR, yL), (xL, yL)])
+    unionPolygon = createPolygon(boundingBoxArray[0])
     i = 1
 
     while i < len(boundingBoxArray):
-        xL = float(boundingBoxArray[i][1])
-        xR = float(boundingBoxArray[i][3])
-        yT = float(boundingBoxArray[i][2])
-        yL = float(boundingBoxArray[i][4])
-        otherPolygon = Polygon([(xL, yT), (xR, yT), (xR, yL), (xL, yL)])
+        otherPolygon = createPolygon(boundingBoxArray[i])
         unionPolygon = unionPolygon.union(otherPolygon)
         i = i + 1
 
@@ -569,23 +720,81 @@ def getIntersection(boundingBoxArray):
         Polygon: The intersection between the bounding boxes.
     """
     intersectionPolygon = None
-    xL = float(boundingBoxArray[0][1])
-    xR = float(boundingBoxArray[0][3])
-    yT = float(boundingBoxArray[0][2])
-    yL = float(boundingBoxArray[0][4])
-    intersectionPolygon = Polygon([(xL, yT), (xR, yT), (xR, yL), (xL, yL)])
+    intersectionPolygon = createPolygon(boundingBoxArray[0])
     i = 1
 
     while i < len(boundingBoxArray):
-        xL = float(boundingBoxArray[i][1])
-        xR = float(boundingBoxArray[i][3])
-        yT = float(boundingBoxArray[i][2])
-        yL = float(boundingBoxArray[i][4])
-        otherPolygon = Polygon([(xL, yT), (xR, yT), (xR, yL), (xL, yL)])
+        otherPolygon = createPolygon(boundingBoxArray[i])
         newIntersection = intersectionPolygon.intersection(otherPolygon)
         if newIntersection.area == 0:
             return newIntersection
         intersectionPolygon = newIntersection
+        i = i + 1
+
+    return intersectionPolygon
+
+
+def getUnionVisited(boundingBoxArray, visited):
+    unionPolygon = None
+    if (boundingBoxArray[0][0],) in visited:
+        unionPolygon = visited[(boundingBoxArray[0][0],)]
+    else:
+        unionPolygon = createPolygon(boundingBoxArray[0][1])
+        visited[(boundingBoxArray[0][0],)] = unionPolygon
+    i = 1
+    idgrp = (boundingBoxArray[0][0],)
+
+    while i < len(boundingBoxArray):
+        if idgrp + (boundingBoxArray[i][0],) in visited:
+            unionPolygon = visited[idgrp + (boundingBoxArray[i][0],)]
+            idgrp = idgrp + (boundingBoxArray[i][0],)
+        else:
+            otherPolygon = createPolygon(boundingBoxArray[i][1])
+            unionPolygon = unionPolygon.union(otherPolygon)
+            idgrp = idgrp + (boundingBoxArray[i][0],)
+            visited[idgrp] = unionPolygon
+        i = i + 1
+
+    return unionPolygon
+
+
+def getIntersectionVisit(boundingBoxArray, visited):
+    """
+    Calculate the intersection between a set of bounding boxes.
+
+    Parameters:
+        boundingBoxArray (list): A list of bounding boxes.
+
+    Returns:
+        Polygon: The intersection between the bounding boxes.
+    """
+    # print(boundingBoxArray)
+    intersectionPolygon = None
+    if (boundingBoxArray[0][0],) in visited:
+        intersectionPolygon = visited[(boundingBoxArray[0][0],)]
+    else:
+        intersectionPolygon = createPolygon(boundingBoxArray[0][1])
+        visited[(boundingBoxArray[0][0],)] = intersectionPolygon
+    i = 1
+    idgrp = (boundingBoxArray[0][0],)
+
+    while i < len(boundingBoxArray):
+        if idgrp + (boundingBoxArray[i][0],) in visited:
+            newIntersection = visited[idgrp + (boundingBoxArray[i][0],)]
+            # print(idgrp + (boundingBoxArray[i][0],))
+            idgrp = idgrp + (boundingBoxArray[i][0],)
+            if newIntersection.area == 0:
+                return newIntersection
+            intersectionPolygon = newIntersection
+        else:
+            otherPolygon = createPolygon(boundingBoxArray[i][1])
+            newIntersection = intersectionPolygon.intersection(otherPolygon)
+            # print("created", idgrp)
+            idgrp = idgrp + (boundingBoxArray[i][0],)
+            visited[idgrp] = newIntersection
+            if newIntersection.area == 0:
+                return newIntersection
+            intersectionPolygon = newIntersection
         i = i + 1
 
     return intersectionPolygon
