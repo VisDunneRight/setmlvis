@@ -135,17 +135,20 @@
     on:blur={(e) => dispatch('mouseout')}
   />
 {:else}
-  {@const falseProp = {'Low Threshold': col.type.low_threshold,
-                       'Wrong Class': col.type.wrong_class,
-                       'Far Away': col.type.far_away,
-                       'Duplicate': col.type.duplicate}}
-  <g on:mousedown={() => selectModel(col, i, 'false positive')}
-    on:mouseover={(e) => dispatch('mousemove', { e, props: falseProp})}
-    on:focus={(e) => dispatch('mousemove', { e, props: falseProp})}
-    on:mousemove={(e) => dispatch('mousemove', { e, props: falseProp})}
+  {@const falseProp = {
+    'Low Threshold': col.type.low_threshold,
+    'Wrong Class': col.type.wrong_class,
+    'Far Away': col.type.far_away,
+    Duplicate: col.type.duplicate,
+  }}
+  <g
+    on:mousedown={() => selectModel(col, i, 'false positive')}
+    on:mouseover={(e) => dispatch('mousemove', { e, props: falseProp })}
+    on:focus={(e) => dispatch('mousemove', { e, props: falseProp })}
+    on:mousemove={(e) => dispatch('mousemove', { e, props: falseProp })}
     on:mouseout={(e) => dispatch('mouseout')}
     on:blur={(e) => dispatch('mouseout')}
-    >
+  >
     <rect
       x={0}
       y={y(duplicate)}
@@ -190,6 +193,28 @@
     />
   </g>
 {/if}
+
+<!-- Adding False Negative -->
+<rect
+  on:mousedown={() => selectModel(col, i, 'false negative')}
+  x={0}
+  y={y(col.falseNeg + col.falsePos + col.truePos)}
+  width={config.circleRadius * 2}
+  height={y(col.falsePos + col.truePos) -
+    y(col.falseNeg + col.falsePos + col.truePos)}
+  fill={colorTypes['false_neg']}
+  class="pointer {colSelected === i && 'false negative' === barSelected
+    ? 'selected'
+    : ''}"
+  on:mouseover={(e) =>
+    dispatch('mousemove', { e, props: { 'False Neg': col.falseNeg } })}
+  on:focus={(e) =>
+    dispatch('mousemove', { e, props: { 'False Neg': col.falseNeg } })}
+  on:mousemove={(e) =>
+    dispatch('mousemove', { e, props: { 'False Neg': col.falseNeg } })}
+  on:mouseout={(e) => dispatch('mouseout')}
+  on:blur={(e) => dispatch('mouseout')}
+/>
 
 <!-- 'duplicate': number,
 'low_threshold': number,

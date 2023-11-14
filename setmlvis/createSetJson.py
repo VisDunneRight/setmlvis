@@ -9,6 +9,7 @@ from shapely import to_wkb
 from shapely import from_wkb
 from rtree import index
 import multiprocessing as mp
+import pprint as pp
 
 DEBUG = False
 FULLDEBUG = False
@@ -46,15 +47,27 @@ def createSetJson(
     if DEBUG:
         print("GetModel, Empty, Parse:", diff - start, "s")
 
+    imgGt = fillImageandGroundTruth(folderName, allFilesDictionary)
+    imgGTMap = {}
+    for i, item in enumerate(imgGt["imgs"]):
+        imgGTMap[item["imgName"]] = i
+
     finalDictionary = fillDictionary(
-        folderName, emptyDictionary, allFilesDictionary, modelNames, setIou, objectClass
+        folderName,
+        emptyDictionary,
+        allFilesDictionary,
+        imgGTMap,
+        modelNames,
+        setIou,
+        objectClass,
     )
     finalTime = time.time()
     if DEBUG:
         print("finalDictionary:", finalTime - diff, "s")
     finalDictionaryWithMetadata = generateMetadata(
-        folderName, finalDictionary, modelNames, setIou
+        folderName, finalDictionary, modelNames, setIou, imgGt
     )
+
     if DEBUG:
         print("MetaDate:", time.time() - finalTime, "s")
     if jsonName != None:
@@ -62,7 +75,7 @@ def createSetJson(
     return finalDictionaryWithMetadata
 
 
-def generateMetadata(folderName, dictionary, modelNames, setIOU):
+def generateMetadata(folderName, dictionary, modelNames, setIOU, imgGt):
     """
     Adds metadata to a dictionary object.
 
@@ -82,6 +95,8 @@ def generateMetadata(folderName, dictionary, modelNames, setIOU):
         "setIOU": setIOU,
     }
     newDict["models"] = dictionary
+    newDict["ground_truth"] = imgGt["ground_truth"]
+    newDict["imgs"] = imgGt["imgs"]
     return newDict
 
 
@@ -100,6 +115,21 @@ def getModelNames(directory: str) -> list[str]:
         if folder not in ["ground_truth", "images"]:
             algorithms.append(folder)
     return algorithms
+
+
+def fillImageandGroundTruth(folderName, allFilesDictionary):
+    imgGT = {"imgs": [], "ground_truth": []}
+    idCount = 0
+
+    for imgName, info in allFilesDictionary.items():
+        im = Image.open(folderName + "images/" + imgName)
+        img = {"imgName": imgName, "imgSize": im.size, "ground_truth": []}
+        for gt in info["ground_truth"]:
+            imgGT["ground_truth"].append(gt)
+            img["ground_truth"].append(idCount)
+            idCount += 1
+        imgGT["imgs"].append(img)
+    return imgGT
 
 
 def createEmptyDictionary(modelNames: list[str]) -> dict[str, list[str]]:
@@ -173,25 +203,25 @@ def parseInputFolder(
     return allFilesDict
 
 
-def initPool(folName, modNames, iout, filClass, idCount):
+def initPool(folName, modNames, iout, filClass, imggt):
     global folderName
     global modelNames
     global iou
     global filterClass
-    global idCounter
+    global imgGtMap
 
     folderName = folName
     modelNames = modNames
     iou = iout
     filterClass = filClass
-    idCounter = idCount
+    imgGtMap = imggt
 
 
 def poolFillDict(item):
     [key, value] = item
     start = time.time()
     bigDict = getEachImageInformation(
-        folderName, key, value, iou, modelNames, filterClass, idCounter
+        folderName, key, value, iou, modelNames, filterClass, imgGtMap
     )
     end = time.time()
     if DEBUG:
@@ -200,7 +230,13 @@ def poolFillDict(item):
 
 
 def fillDictionary(
-    folderName, emptyDictionary, allFilesDictionary, modelNames, iou, filterClass
+    folderName,
+    emptyDictionary,
+    allFilesDictionary,
+    imgGtMap,
+    modelNames,
+    iou,
+    filterClass,
 ):
     """
     This function fills the empty dictionary with information about the bounding boxes for each image.
@@ -238,15 +274,20 @@ def fillDictionary(
         }
         where model1, model2, ..., modelN are the names of the models used to generate the bounding boxes.
     """
+
     idCounter = Counter()
     pool = mp.Pool(
         initializer=initPool,
-        initargs=(folderName, modelNames, iou, filterClass, idCounter),
+        initargs=(folderName, modelNames, iou, filterClass, imgGtMap),
     )
     res = pool.map(poolFillDict, allFilesDictionary.items())
     for image in res:
         for key, value in image.items():
+            for name, detect in value["detections"].items():
+                detect["id"] = str(idCounter.count) + detect["id"]
+            # value["id"] = str(idCounter.count) + value["id"]
             emptyDictionary[key].append(value)
+            idCounter.increment()
     # idCounter = Counter()
     # for key, value in allFilesDictionary.items():
     #     start = time.time()
@@ -262,7 +303,7 @@ def fillDictionary(
 
 
 def getEachImageInformation(
-    folderName, imageName, inp, iouAlgos, modelNames, filterClass, idCounter
+    folderName, imageName, inp, iouAlgos, modelNames, filterClass, imgGtMap
 ):
     bigDict = {}
     dictionary = []
@@ -295,7 +336,7 @@ def getEachImageInformation(
                     ground_truth_boxes,
                     previous_gt_shapes,
                     used_gt_by_image,
-                    idCounter,
+                    imgGtMap,
                 )
                 if FULLDEBUG:
                     print("\t subSet:", time.time() - start)
@@ -334,7 +375,7 @@ def getRealSets(
     ground_truth_boxes,
     previous_gt_shapes,
     used_gt_by_image,
-    idCounter,
+    imgGtMap,
 ):
     """
     This function finds the intersection and union between sets of bounding boxes and returns a list of dictionaries containing information about the bounding boxes with the highest IOU.
@@ -417,12 +458,6 @@ def getRealSets(
             resX = []
             for val in x:
                 resX.append(val[1])
-            # print(
-            #     intersection.area,
-            #     getIntersection(resX).area,
-            #     union.area,
-            #     getUnion(resX).area,
-            # )
             tup = (IOU, resX)
             dictRank.append(tup)
 
@@ -467,12 +502,12 @@ def getRealSets(
 
                 if addList[0] != 0:
                     newDict = {}
-                    newDict["imgName"] = imageName
-                    newDict["id"] = str(idCounter.count) + "-" + imageName
+                    newDict["imgId"] = imgGtMap[imageName]
+                    newDict["id"] = "-" + imageName
                     newDict["IOU"] = key
                     newDict["boxes"] = dict(zip(subset, value))
-                    im = Image.open(folderName + "images/" + imageName)
-                    newDict["imgSize"] = im.size
+                    # im = Image.open(folderName + "images/" + imageName)
+                    # newDict["imgSize"] = im.size
                     polygonShape = getIntersection(value)
                     newAreaCoords = list(polygonShape.exterior.coords)
                     x, y = list(zip(*newAreaCoords))
@@ -490,7 +525,6 @@ def getRealSets(
                     newDict["confidence"] = confidenceArray
                     dictionary[str(count)] = newDict
                     count = count + 1
-                    idCounter.increment()
                     # dictionary.append(newDict)
 
     keepIOU = time.time()
@@ -622,7 +656,13 @@ def getRealSets(
     for key, value in dictionary.items():
         if "gtShape" in value and value["iouGT"] > 0.0:
             previous_gt_shapes.add(tuple(value["gtShape"]))
-    return dictionary, falseNegatives, inp, previous_gt_shapes
+
+    return (
+        dictionary,
+        {"imageId": imgGtMap[imageName], "values": falseNegatives},
+        inp,
+        previous_gt_shapes,
+    )
 
 
 def generateJson(dictionary, jsonName):

@@ -3,6 +3,8 @@
 export type Data = {
   meta: Meta;
   models: Models;
+  ground_truth: Array<ObjectDect>;
+  imgs: Array<Image>;
 };
 export type Models = Record<string, Array<DataRes>>;
 
@@ -26,14 +28,20 @@ export type Meta = {
 
 export type StringNumMap = Record<string, number>;
 
+export type Image = {
+  imgName: string;
+  imgSize: [number, number];
+  ground_truth: Array<number>;
+};
+
 export type ImgData = {
   IOU: number;
   boxes: object;
   confidence: Array<number>;
-  gtShape: FN;
+  gtShape: ObjectDect;
   id: string;
-  imgName: string;
-  imgSize: [number, number];
+  imgId: number;
+
   category: 'duplicate' | 'low_threshold' | 'far_away' | 'wrong_class';
   iouGT: number;
   shape: [number, number, number, number];
@@ -71,4 +79,6 @@ export type DoubleSliderType = {
   updatefunction: (arg0: any) => void;
 };
 
-export type FN = [string, string, string, string, string];
+export type FN = ObjectDect;
+
+export type ObjectDect = [string, string, string, string, string];

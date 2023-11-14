@@ -37,7 +37,7 @@
   let setFliter: Array<number> = [];
   let setData: Array<ColumnType> = [];
   let showEmptySets = false;
-  let showTotalSets = true;
+  let showDifferenceSet = true;
 
   metaModel.forEach((model: string, i: number) => {
     $colorMap[model] = i % color.length;
@@ -118,9 +118,9 @@
     confid: [number, number],
     breakdown: boolean,
     showEmptySets: boolean,
-    showTotalSets: boolean
+    showDifferenceSet: boolean
   ) {
-    if (showTotalSets) {
+    if (showDifferenceSet) {
       let data: Array<ColumnType> = [];
       Object.entries(dset.models).forEach(([name, arryList]) => {
         //Generates Circle information
@@ -141,6 +141,7 @@
           modelRange: modelRange,
           truePos: 0,
           falsePos: 0,
+          falseNeg: 0,
           type: {
             duplicate: 0,
             low_threshold: 0,
@@ -160,8 +161,12 @@
               column.type[info.category] += 1;
             }
           });
+          // column['falseNeg'] += obj.FN.values.length;
         });
-        if (showEmptySets || column.truePos + column.falsePos > 0) {
+        if (
+          showEmptySets ||
+          column.truePos + column.falsePos + column.falseNeg > 0
+        ) {
           data.push(column);
         }
       });
@@ -180,7 +185,6 @@
       });
 
       let data: Array<ColumnType> = [];
-
       Object.entries(totalModels).forEach(([name, arryList]) => {
         //Generates Circle information
         if (name.split(',').length !== 2) {
@@ -215,7 +219,6 @@
         //determine the number of postives
         arryList.forEach((obj) => {
           Object.entries(obj.detections).forEach(([type, info]) => {
-            console.log(info, confid, iou);
             let positivity = determinePostivity(info, confid, iou);
             if (positivity === 2) {
               column['truePos'] += 1;
@@ -224,8 +227,13 @@
               column.type[info.category] += 1;
             }
           });
+          column['falseNeg'] += obj.FN.values.length;
+          console.log(name, obj.FN);
         });
-        if (showEmptySets || column.truePos + column.falsePos > 0) {
+        if (
+          showEmptySets ||
+          column.truePos + column.falsePos + column.falseNeg > 0
+        ) {
           data.push(column);
         }
       });
@@ -239,10 +247,10 @@
     $confidence,
     $breakdown,
     showEmptySets,
-    showTotalSets
+    showDifferenceSet
   );
 
-  $: maxY = d3.max(data, (d) => d.truePos + d.falsePos);
+  $: maxY = d3.max(data, (d) => d.truePos + d.falsePos + d.falseNeg);
   $: extentY = [0, maxY === undefined ? 100 : maxY];
 
   $: y = d3
@@ -378,10 +386,10 @@
     showEmptySets = event?.currentTarget?.checked;
   }
 
-  function updateShowTotalSets(
+  function updateshowDifferenceSet(
     event: Event & { currentTarget: HTMLInputElement }
   ) {
-    showTotalSets = event?.currentTarget?.checked;
+    showDifferenceSet = event?.currentTarget?.checked;
   }
 
   $: svgWidth = columnSpacing(setData.length + 1 + data.length);
@@ -583,8 +591,8 @@
     <div style:position="absolute" style:left="3px" style:top="32px">
       <VisToggle
         message="Difference"
-        enabled={showTotalSets}
-        update={updateShowTotalSets}
+        enabled={showDifferenceSet}
+        update={updateshowDifferenceSet}
       />
     </div>
   </div>

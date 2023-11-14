@@ -13,6 +13,7 @@ export const color = [
 
 export const colorTypes = {
   true_pos: '#377eb8',
+  false_neg: '#99d8c9',
   false_pos: '#e41a1c',
   low_threshold: '#ff8a80',
   wrong_class: '#ff5252',

@@ -23,7 +23,7 @@
   let imgHeight = [100];
   let gap = 4;
   $: selected = {};
-
+  $: console.log("Results:",$selectedCol,$selectedImgs);
   function rescaleImages(
     imageData: ImgData[],
     startingHeight: number,
@@ -141,7 +141,7 @@
     }
     $selectedCol = imgSelection;
   }
-  $: console.log($selectedCol);
+  
 </script>
 
 <div

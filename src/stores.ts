@@ -116,6 +116,8 @@ export function setStoreModels(model: DOMWidgetModel): void {
         SetIOU: 0.8,
       },
       models: {},
+      ground_truth: [],
+      imgs: [],
     },
     model
   );
