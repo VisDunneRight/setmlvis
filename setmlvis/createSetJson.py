@@ -285,9 +285,10 @@ def fillDictionary(
         for key, value in image.items():
             for name, detect in value["detections"].items():
                 detect["id"] = str(idCounter.count) + detect["id"]
+                idCounter.increment()
             # value["id"] = str(idCounter.count) + value["id"]
             emptyDictionary[key].append(value)
-            idCounter.increment()
+
     # idCounter = Counter()
     # for key, value in allFilesDictionary.items():
     #     start = time.time()
@@ -505,6 +506,7 @@ def getRealSets(
                     newDict["imgId"] = imgGtMap[imageName]
                     newDict["id"] = "-" + imageName
                     newDict["IOU"] = key
+                    newDict["tags"] = []
                     newDict["boxes"] = dict(zip(subset, value))
                     # im = Image.open(folderName + "images/" + imageName)
                     # newDict["imgSize"] = im.size

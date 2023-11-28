@@ -6,6 +6,8 @@
     height,
     openDetailView,
     selectedCol,
+    dataset,
+    selectedImgBoxes,
   } from '../stores';
 
   import DrawTextbox from './vis/DrawTextbox.svelte';
@@ -19,8 +21,14 @@
   export let folderName: string;
   $: compWidth = $windowWidth * 0.95 - 300;
   $: compHeight = $height * 0.9;
-  $: imgWidth = $selectedImg === undefined ? 0 : $selectedImg.imgSize[0];
-  $: imgHeight = $selectedImg === undefined ? 0 : $selectedImg.imgSize[1];
+  $: imgWidth =
+    $selectedImg === undefined
+      ? 0
+      : $dataset.imgs[$selectedImg.imgId].imgSize[0];
+  $: imgHeight =
+    $selectedImg === undefined
+      ? 0
+      : $dataset.imgs[$selectedImg.imgId].imgSize[1];
 
   function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -104,7 +112,7 @@
                 <img
                   width="{newImg.width}px"
                   height={newImg.height}
-                  src={folderName + $selectedImg.imgName}
+                  src={folderName + $dataset.imgs[$selectedImg.imgId].imgName}
                   alt="selected Figure"
                 />
                 <svg width={newImg.width} height={newImg.height}>
@@ -132,22 +140,70 @@
                   {/if}
                   {#each Object.entries($selectedImg.boxes) as [name, box]}
                     <DrawTextbox
-                      x={box[1] * newImg.width}
-                      y={box[2] * newImg.height}
+                      x={+box[1] * newImg.width}
+                      y={+box[2] * newImg.height}
                       backgroundColor={color[$colorMap[name]]}
                       textColor="white"
                       size={13}
-                      text={showConfidence(box[0], box[5])}
+                      text={showConfidence(box[0], +box[5])}
                     />
                     <rect
-                      x={box[1] * newImg.width}
-                      y={box[2] * newImg.height}
-                      width={(box[3] - box[1]) * newImg.width}
-                      height={(box[4] - box[2]) * newImg.height}
+                      x={+box[1] * newImg.width}
+                      y={+box[2] * newImg.height}
+                      width={(+box[3] - +box[1]) * newImg.width}
+                      height={(+box[4] - +box[2]) * newImg.height}
                       fill="none"
                       stroke={color[$colorMap[name]]}
                     />
                   {/each}
+                  {#if $selectedImgBoxes}
+                    {#each $selectedImgBoxes.ground_truth.data as dect}
+                      {#if dect.selected}
+                        <DrawTextbox
+                          x={+dect.shape[1] * newImg.width}
+                          y={+dect.shape[2] * newImg.height}
+                          backgroundColor="white"
+                          size={13}
+                          textColor="black"
+                          text="Ground truth"
+                        />
+                        <rect
+                          x={+dect.shape[1] * newImg.width}
+                          y={+dect.shape[2] * newImg.height}
+                          width={(+dect.shape[3] - +dect.shape[1]) *
+                            newImg.width}
+                          height={(+dect.shape[4] - +dect.shape[2]) *
+                            newImg.height}
+                          fill="none"
+                          stroke="white"
+                        />
+                      {/if}
+                    {/each}
+                    {#each Object.entries($selectedImgBoxes.detections) as [name, arrydect]}
+                      {#each arrydect.data as dect}
+                        {#if dect.selected}
+                          <DrawTextbox
+                            x={+dect.data[1] * newImg.width}
+                            y={+dect.data[2] * newImg.height}
+                            backgroundColor={color[$colorMap[name]]}
+                            textColor="white"
+                            size={13}
+                            text={showConfidence(dect.data[0], +dect.data[5])}
+                          />
+                          <rect
+                            x={+dect.data[1] * newImg.width}
+                            y={+dect.data[2] * newImg.height}
+                            width={(+dect.data[3] - +dect.data[1]) *
+                              newImg.width}
+                            height={(+dect.data[4] - +dect.data[2]) *
+                              newImg.height}
+                            fill="none"
+                            stroke={color[$colorMap[name]]}
+                          />
+                        {/if}
+                      {/each}
+                    {/each}
+                  {/if}
                 </svg>
               </div>
             </div>

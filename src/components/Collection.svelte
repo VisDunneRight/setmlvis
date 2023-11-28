@@ -1,13 +1,14 @@
 <script lang="ts">
   import {
     selectedCol,
+    dataset,
     selectedImgs,
     windowWidth,
     menuWidth,
     topHeight,
     height,
   } from '../stores';
-  import type { ImgData, ImgInfo } from '../types';
+  import type { Image, ImgData, ImgInfo, Sort } from '../types';
   import RangeSlider from 'svelte-range-slider-pips';
   import DrawThumbnail from './vis/DrawThumbnail.svelte';
   import VisToggle from './vis/VisToggle.svelte';
@@ -19,13 +20,18 @@
   } from '@rgossiaux/svelte-headlessui';
 
   import './collectionSlider.css';
+  import SortUp from '../assets/sort-up.svelte';
+  import SortDown from '../assets/sort-down.svelte';
   export let folderName = '';
   let imgHeight = [100];
   let gap = 4;
+  $: tagText = '';
   $: selected = {};
-  $: console.log("Results:",$selectedCol,$selectedImgs);
+  let sortBy: Sort = { sortByIOU: 0, sortByID: 1 };
+
   function rescaleImages(
     imageData: ImgData[],
+    images: Array<Image>,
     startingHeight: number,
     maxWidth: number,
     gap: number
@@ -36,8 +42,8 @@
     let left = 0;
     let top = 0;
     imageData.forEach((img) => {
-      let imgWidth = img === undefined ? 0 : img.imgSize[0];
-      let imgHeight = img === undefined ? 0 : img.imgSize[1];
+      let imgWidth = img === undefined ? 0 : images[img.imgId].imgSize[0];
+      let imgHeight = img === undefined ? 0 : images[img.imgId].imgSize[1];
       let imgRatio = imgWidth / imgHeight;
       let width = startingHeight * imgRatio;
       // if img fits add to the currentrow
@@ -60,7 +66,8 @@
           let imgRat =
             item.data === undefined
               ? 1
-              : item.data.imgSize[0] / item.data.imgSize[1];
+              : images[item.data.imgId].imgSize[0] /
+                images[item.data.imgId].imgSize[1];
           newLeft += item.height * imgRat + gap;
         });
         //reset all values
@@ -87,6 +94,7 @@
   }
   $: imgInfo = rescaleImages(
     $selectedCol,
+    $dataset['imgs'],
     imgHeight[0],
     $windowWidth - $menuWidth - 16,
     gap
@@ -107,7 +115,14 @@
     selected = selectImgUpdate;
     $selectedImgs = selectImgUpdate;
   }
-
+  function addTag() {
+    Object.entries(selected).forEach(([name, prop]) => {
+      prop.tags.push(tagText);
+    });
+    tagText = '';
+    //forces updates the images
+    imgInfo = imgInfo;
+  }
   function ClearAllSelectedImgs() {
     $selectedImgs = {};
     selected = {};
@@ -141,7 +156,39 @@
     }
     $selectedCol = imgSelection;
   }
-  
+
+  function updateSorting(value: string) {
+    let temp = sortBy[value];
+    for (const name in sortBy) {
+      sortBy[name] = 0;
+    }
+    if (temp < 2) {
+      sortBy[value] = 2;
+    } else {
+      sortBy[value] = 1;
+    }
+
+    if (value === 'sortByIOU') {
+      if (sortBy[value] === 2) {
+        $selectedCol.sort((a, b) => a.IOU - b.IOU);
+      } else {
+        $selectedCol.sort((a, b) => b.IOU - a.IOU);
+      }
+    } else if (value === 'sortByID') {
+      if (sortBy[value] === 2) {
+        $selectedCol.sort((a, b) => a.imgId - b.imgId);
+      } else {
+        $selectedCol.sort((a, b) => b.imgId - a.imgId);
+      }
+    }
+    imgInfo = rescaleImages(
+      $selectedCol,
+      $dataset['imgs'],
+      imgHeight[0],
+      $windowWidth - $menuWidth - 16,
+      gap
+    );
+  }
 </script>
 
 <div
@@ -218,6 +265,124 @@
             </div>
           </MenuItems>
         </Menu>
+        <Menu>
+          <MenuButton class="tag-select"
+            ><svg
+              width={20}
+              height={20}
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M7.0498 7.0498H7.0598M10.5118 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V10.5118C3 11.2455 3 11.6124 3.08289 11.9577C3.15638 12.2638 3.27759 12.5564 3.44208 12.8249C3.6276 13.1276 3.88703 13.387 4.40589 13.9059L9.10589 18.6059C10.2939 19.7939 10.888 20.388 11.5729 20.6105C12.1755 20.8063 12.8245 20.8063 13.4271 20.6105C14.112 20.388 14.7061 19.7939 15.8941 18.6059L18.6059 15.8941C19.7939 14.7061 20.388 14.112 20.6105 13.4271C20.8063 12.8245 20.8063 12.1755 20.6105 11.5729C20.388 10.888 19.7939 10.2939 18.6059 9.10589L13.9059 4.40589C13.387 3.88703 13.1276 3.6276 12.8249 3.44208C12.5564 3.27759 12.2638 3.15638 11.9577 3.08289C11.6124 3 11.2455 3 10.5118 3ZM7.5498 7.0498C7.5498 7.32595 7.32595 7.5498 7.0498 7.5498C6.77366 7.5498 6.5498 7.32595 6.5498 7.0498C6.5498 6.77366 6.77366 6.5498 7.0498 6.5498C7.32595 6.5498 7.5498 6.77366 7.5498 7.0498Z"
+                stroke="#ffffff"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg></MenuButton
+          >
+
+          <MenuItems>
+            <div class="panel-contents">
+              <div class="panel-row-input">
+                <input
+                  class="tags-input"
+                  type="text"
+                  bind:value={tagText}
+                  placeholder="+tag {Object.entries($selectedImgs)
+                    .length} selected sample"
+                />
+              </div>
+              {#if tagText !== ''}
+                <div class="panel-row">
+                  <div
+                    class="tags-button"
+                    on:click={(e) => {
+                      e.preventDefault();
+                      addTag();
+                    }}
+                    on:keypress={(e) => {
+                      e.preventDefault();
+                      addTag();
+                    }}
+                  >
+                    <span class="tags-span"
+                      >add &quot{tagText}&quot tag to {Object.entries(
+                        $selectedImgs
+                      ).length} samples.</span
+                    >
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </MenuItems>
+        </Menu>
+        <Menu>
+          <MenuButton class="tag-select">
+            <svg
+              width={20}
+              height={20}
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 18L16 16M16 6L20 10.125M16 6L12 10.125M16 6L16 13"
+                stroke="#ffffff"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M8 18L12 13.875M8 18L4 13.875M8 18L8 11M8 6V8"
+                stroke="#ffffff"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </MenuButton>
+          <MenuItems>
+            <div class="menu-option">
+              <MenuItem let:active class="menu-selection" title="Sort by IOU">
+                <span
+                  class:active
+                  on:click={(e) => updateSorting('sortByIOU')}
+                  on:keypress={(e) => updateSorting('sortByIOU')}
+                  style={'display: flex;'}
+                >
+                  {#if sortBy.sortByIOU === 2}
+                    <SortUp size={15} color="#ffffff" />
+                  {:else if sortBy.sortByIOU === 1}
+                    <SortDown size={15} color="#ffffff" />
+                  {:else}
+                    <span style="width:15px" />
+                  {/if}
+                  Sort by IOU
+                </span>
+              </MenuItem>
+              <MenuItem let:active class="menu-selection" title="Sort by ID">
+                <span
+                  class:active
+                  on:click={(e) => updateSorting('sortByID')}
+                  on:keypress={(e) => updateSorting('sortByID')}
+                  style={'display: flex;'}
+                >
+                  {#if sortBy.sortByID === 2}
+                    <SortUp size={15} color="#ffffff" />
+                  {:else if sortBy.sortByID === 1}
+                    <SortDown size={15} color="#ffffff" />
+                  {:else}
+                    <span style="width:15px" />
+                  {/if}
+                  Sort by ID
+                </span>
+              </MenuItem>
+            </div>
+          </MenuItems>
+        </Menu>
         <VisToggle
           message={'Group Images'}
           activeColor="blueviolet"
@@ -249,6 +414,7 @@
           left={img.left}
           top={img.top}
           data={img.data}
+          imgInfo={$dataset['imgs'][img.data.imgId]}
           height={img.height}
           index={i}
           {folderName}
@@ -264,6 +430,64 @@
 </div>
 
 <style>
+  .tags-input {
+    background-color: transparent;
+    color: rgb(255, 255, 255);
+    height: 2rem;
+    font-size: 14px;
+    border: none;
+    -webkit-box-align: center;
+    align-items: center;
+    font-weight: bold;
+    width: 100%;
+  }
+
+  .tags-button {
+    cursor: pointer;
+    padding-right: 0.25rem;
+    display: flex;
+    -webkit-box-pack: center;
+    place-content: center;
+    flex-direction: column;
+    border-bottom: none !important;
+    background-color: rgb(38, 38, 38);
+    color: rgb(179, 179, 179);
+    user-select: none;
+    margin: 0.25rem -0.5rem;
+    padding-left: 0.5rem;
+    height: 2rem;
+    border-radius: 0px;
+  }
+  .tags-span {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .panel-row-input {
+    font-size: 14px;
+    border-bottom: 1px solid rgb(255, 109, 5);
+    position: relative;
+    margin: 0.5rem 0px;
+  }
+  .panel-row {
+    font-size: 14px;
+    position: relative;
+    margin: 0.5rem 0px;
+  }
+  .panel-contents {
+    background-color: rgb(26, 26, 26);
+    border: 1px solid rgb(13, 13, 13);
+    border-radius: 2px;
+    box-shadow: rgb(26, 26, 26) 0px 2px 20px;
+    box-sizing: border-box;
+    margin-top: 0.6rem;
+    position: absolute;
+    font-size: 14px;
+    padding: 0px 0.5rem;
+    width: 14rem;
+  }
+
   .media-scroller {
     position: absolute;
     width: 100%;
@@ -305,6 +529,19 @@
   :global(.collection-menu .img-select) {
     width: 50px;
     padding: 0.25rem 0.75rem;
+    line-height: 2rem;
+    border-radius: 1rem;
+    border: none;
+    align-items: center;
+    background-color: blueviolet;
+    color: rgb(255, 255, 255);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  :global(.collection-menu .tag-select) {
+    padding: 0.25rem 1rem;
     line-height: 2rem;
     border-radius: 1rem;
     border: none;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ImgData } from '../../types';
+  import type { Image, ImgData } from '../../types';
   import DuplicateIcon from '../../assets/duplicate.svelte';
   import FarWayIcon from '../../assets/far-away.svelte';
   import LowThresholdIcon from '../../assets/low-threshold-normal.svelte';
@@ -21,14 +21,16 @@
   export let height: number;
   export let top: number;
   export let left: number;
+  export let imgInfo: Image;
   export let folderName = '';
   export let selected: boolean;
   export let updateSelection: (checked: boolean) => void;
 
-  $: imgWidth = data === undefined ? 0 : data.imgSize[0];
-  $: imgHeight = data === undefined ? 0 : data.imgSize[1];
+  $: imgWidth = data === undefined ? 0 : imgInfo.imgSize[0];
+  $: imgHeight = data === undefined ? 0 : imgInfo.imgSize[1];
   $: imgRatio = imgWidth / imgHeight;
   $: width = height * imgRatio;
+
   function selectImgData() {
     $selectedImg = data;
     $selectedImgIdx = index;
@@ -51,7 +53,7 @@
     >
       <img
         height="{height}px"
-        src={folderName + data.imgName}
+        src={folderName + imgInfo.imgName}
         alt="selected Figure"
       />
 
@@ -92,9 +94,14 @@
             {/if}
           {/if}
         {/if}
-        <title>{data.imgName}</title>
+        <title>{imgInfo.imgName}</title>
       </svg>
     </button>
+    <div class="tag-display">
+      {#each data.tags as tag, i}
+        <div title={tag} style="background-color:{color[i % 10]};">{tag}</div>
+      {/each}
+    </div>
     <div class="checkbox-pos {selected === true ? 'checkbox-show' : ''}">
       <div />
       <Checkbox checked={selected} {updateSelection} />
@@ -103,6 +110,39 @@
 </div>
 
 <style>
+  .tag-display {
+    position: absolute;
+    bottom: 0;
+    padding: 0.5rem;
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: none;
+    width: 100%;
+    pointer-events: none;
+    font-family: Palanquin, sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    overflow: hidden;
+  }
+  .tag-display > div {
+    display: inline-block;
+    box-sizing: content-box;
+    height: 1em;
+    margin: 0 2px;
+    padding: 3px;
+    color: white;
+    font-size: 12px;
+    line-height: 12px;
+    border-radius: 3px;
+    font-weight: 700;
+    text-align: center;
+    vertical-align: bottom;
+    pointer-events: auto;
+    max-width: calc(100% - 8px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   svg,
   img {
     position: absolute;

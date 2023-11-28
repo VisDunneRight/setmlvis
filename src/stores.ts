@@ -2,7 +2,7 @@ import type { Writable } from 'svelte/store';
 import type { DOMWidgetModel } from '@jupyter-widgets/base';
 
 import { writable } from 'svelte/store';
-import type { Data, ImgData, StringNumMap } from './types';
+import type { Data, ImgData, StringNumMap, ImgBoxes } from './types';
 
 // //boilerplate code that will be ignored for now
 // interface WidgetWritable<T> extends Writable<T> {
@@ -86,6 +86,7 @@ function createSyncedWidget<T>(
 export let dataset: Writable<Data>;
 export let selectedCol: Writable<ImgData[]>;
 export let selectedImgs: Writable<Record<string, ImgData>>;
+export let selectedImgBoxes: Writable<ImgBoxes>;
 export let num_instances: Writable<number>;
 export let height: Writable<number>;
 export let IOU: Writable<number>;
@@ -137,6 +138,7 @@ export function setStoreModels(model: DOMWidgetModel): void {
   windowWidth = writable(600);
   menuWidth = writable(200);
   selectedImg = writable(undefined);
+  selectedImgBoxes = writable(undefined);
   selectedImgIdx = writable(-1);
   openDetailView = writable(false);
   openCollectionMenu = writable(false);

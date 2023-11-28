@@ -10,6 +10,7 @@
   export let check = 0;
   export let hasCheck = true;
   export let colorCheck = '#424242';
+  export let updateCheck = undefined;
 
   const handleClick = () => (open = !open);
   const handleCheck = () => {
@@ -18,6 +19,9 @@
     } else {
       check = 0;
     }
+    if (updateCheck) {
+      updateCheck();
+    }
   };
 </script>
 
@@ -25,10 +29,10 @@
   <div class="line">
     {#if hasCheck}
       <span class="checkmark" on:click={handleCheck} on:keydown={handleCheck}>
-        {#if check === 0}
+        {#if check === 2}
           <Checked size={20} color={colorCheck} />
         {:else if check === 1}
-          <CheckedMinus size={20} color={colorCheck} />
+          <CheckedMinus size={24} color={colorCheck} />
         {:else}
           <Unchecked size={20} color={colorCheck} />
         {/if}

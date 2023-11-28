@@ -28,24 +28,55 @@ export type Meta = {
 
 export type StringNumMap = Record<string, number>;
 
-export type Image = {
-  imgName: string;
-  imgSize: [number, number];
-  ground_truth: Array<number>;
+export type ImgBoxes =
+  | {
+      ground_truth: GroundTruthObj;
+      detections: Detection;
+    }
+  | undefined;
+
+export type GroundTruthObj = {
+  data: Array<GroundTruth>;
+  selected: number;
 };
+export type GroundTruth = { id: number; shape: ObjectDect; selected: boolean };
+
+export type Detection = {
+  [key: string]: { data: Array<Detect>; selected: number };
+};
+
+export type Sort = {
+  [key: string]: number;
+};
+
+export type Detect = { selected: boolean; data: Boxes };
+
+export type Image =
+  | {
+      imgName: string;
+      imgSize: [number, number];
+      ground_truth: Array<number>;
+    }
+  | undefined;
 
 export type ImgData = {
   IOU: number;
-  boxes: object;
+  boxes: Boxes;
   confidence: Array<number>;
   gtShape: ObjectDect;
   id: string;
   imgId: number;
+  tags: Array<string>;
 
   category: 'duplicate' | 'low_threshold' | 'far_away' | 'wrong_class';
   iouGT: number;
   shape: [number, number, number, number];
 };
+
+export type Boxes = {
+  [key: string]: Box;
+};
+export type Box = [string, string, string, string, string, string];
 
 export type MenuItem = SliderType | DoubleSliderType;
 

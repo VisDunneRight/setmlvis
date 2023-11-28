@@ -9,8 +9,15 @@
   width={size}
   height={size}
   class="svg-icon"
-  viewBox="0 0 279.3 279.3"
+  viewBox="0 0 32 32"
 >
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+    </style>
+  </defs>
   <path
     d="M26,4H6A2,2,0,0,0,4,6V26a2,2,0,0,0,2,2H26a2,2,0,0,0,2-2V6A2,2,0,0,0,26,4ZM22,18H10V14H22Z"
   />

@@ -1,6 +1,6 @@
 {
   "name": "setmlvis",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "A new visualization method for comparing different models for bounding box detection.",
   "keywords": [
     "jupyter",
