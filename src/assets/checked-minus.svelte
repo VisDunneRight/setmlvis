@@ -9,7 +9,7 @@
   width={size}
   height={size}
   class="svg-icon"
-  viewBox="0 0 32 32"
+  viewBox="4 4 24 24"
 >
   <defs>
     <style>

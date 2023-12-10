@@ -28,7 +28,7 @@
   $: imgHeight =
     $selectedImg === undefined
       ? 0
-      : $dataset.imgs[$selectedImg.imgId].imgSize[1];
+      : $dataset.imgs[$selectedImg?.imgId ?? 0].imgSize[1];
 
   function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -112,7 +112,7 @@
                 <img
                   width="{newImg.width}px"
                   height={newImg.height}
-                  src={folderName + $dataset.imgs[$selectedImg.imgId].imgName}
+                  src={folderName + $dataset?.imgs[$selectedImg.imgId]?.imgName}
                   alt="selected Figure"
                 />
                 <svg width={newImg.width} height={newImg.height}>

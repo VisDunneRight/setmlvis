@@ -39,6 +39,7 @@ def createSetJson(
     Returns:
     None
     """
+
     start = time.time()
     modelNames = getModelNames(folderName)
     emptyDictionary = createEmptyDictionary(modelNames)
@@ -66,6 +67,10 @@ def createSetJson(
         print("finalDictionary:", finalTime - diff, "s")
     finalDictionaryWithMetadata = generateMetadata(
         folderName, finalDictionary, modelNames, setIou, imgGt
+    )
+
+    finalDictionaryWithMetadata = updateFalseNegativesInDictionary(
+        finalDictionaryWithMetadata, folderName, modelNames, objectClass
     )
 
     if DEBUG:
@@ -98,6 +103,81 @@ def generateMetadata(folderName, dictionary, modelNames, setIOU, imgGt):
     newDict["ground_truth"] = imgGt["ground_truth"]
     newDict["imgs"] = imgGt["imgs"]
     return newDict
+
+
+def read_file(file_path):
+    with open(file_path, "r") as file:
+        lines = file.readlines()
+    return [line.strip().split() for line in lines]
+
+
+def compare_ground_truth_model(ground_truth, model_predictions, object_class):
+    false_negatives = []
+    # Filter ground truth and predictions by the specified class
+    filtered_gt = [gt for gt in ground_truth if gt[0] == object_class]
+    filtered_mp = [mp for mp in model_predictions if mp[0] == object_class]
+
+    for gt in filtered_gt:
+        intersections = [getIntersection([gt, mp]) for mp in filtered_mp]
+        # Check if there is no sufficient intersection with any prediction
+        if not any(
+            intersection.area / createPolygon(gt).area > 0.0
+            for intersection in intersections
+        ):
+            false_negatives.append(gt)
+    return false_negatives
+
+
+def generateFalseNegatives(dictionary, folderName, modelNames, objectClass):
+    ground_truth_path = os.path.join(folderName, "ground_truth")
+    models_path = {model: os.path.join(folderName, model) for model in modelNames}
+
+    false_negatives = {"FalseNegatives": {}}
+    for model_name, model_path in models_path.items():
+        false_negatives["FalseNegatives"][model_name] = []
+
+        for img_id, filename in enumerate(sorted(os.listdir(ground_truth_path))):
+            gt_file = os.path.join(ground_truth_path, filename)
+            model_file = os.path.join(model_path, filename)
+
+            ground_truth = read_file(gt_file)
+            model_predictions = read_file(model_file)
+
+            img_false_negatives = compare_ground_truth_model(
+                ground_truth, model_predictions, objectClass
+            )
+            if img_false_negatives:
+                false_negatives["FalseNegatives"][model_name].append(
+                    {"imageId": img_id, "values": img_false_negatives}
+                )
+    dictionary["FalseNegatives"] = false_negatives
+    return dictionary
+
+
+def updateFalseNegativesInDictionary(
+    existingDictionary, folderName, modelNames, objectClass
+):
+    # Generate the false negatives using the generateFalseNegatives function
+    falseNegativesResults = generateFalseNegatives(
+        existingDictionary, folderName, modelNames, objectClass
+    )
+    # Iterate through each model in the existing dictionary
+    for model in existingDictionary.get("models", {}):
+        modelFN = falseNegativesResults["FalseNegatives"].get(model.strip(","), [])
+
+        # Iterate through each image detection for the model
+        for detection in existingDictionary["models"][model]:
+            imageId = detection.get("FN", {}).get("imageId", None)
+            if imageId is not None:
+                # Find matching false negatives for this image ID
+                matchingFN = next(
+                    (item for item in modelFN if item["imageId"] == imageId), None
+                )
+                if matchingFN:
+                    # Update the FN field with the new false negatives
+                    detection["FN"] = matchingFN
+
+    return existingDictionary
 
 
 def getModelNames(directory: str) -> list[str]:
@@ -361,7 +441,7 @@ def getEachImageInformation(
                             used_gt_by_image[imageName] = []
                         used_gt_by_image[imageName].append(box)
 
-                bigDict[stringTotal] = {"detections": dictionary, "FN": falseNegatives}
+                bigDict[stringTotal] = {"detections": dictionary, "FN": {}}
     return bigDict
 
 

@@ -13,6 +13,7 @@
     selectedImgIdx,
     breakdown,
     IOU,
+    tags,
   } from '../../stores';
   import { color, colorTypes } from '../../ulit';
 
@@ -37,7 +38,6 @@
     $openDetailView = true;
   }
   let iconSize = 14;
-  $: console.log(data);
 </script>
 
 <div
@@ -98,8 +98,13 @@
       </svg>
     </button>
     <div class="tag-display">
-      {#each data.tags as tag, i}
-        <div title={tag} style="background-color:{color[i % 10]};">{tag}</div>
+      {#each data.tags as tag}
+        <div
+          title={tag}
+          style="background-color:{color[$tags.indexOf(tag) % 10]};"
+        >
+          {tag}
+        </div>
       {/each}
     </div>
     <div class="checkbox-pos {selected === true ? 'checkbox-show' : ''}">

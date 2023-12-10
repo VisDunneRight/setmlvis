@@ -7,11 +7,16 @@
     menuWidth,
     topHeight,
     height,
+    tags,
   } from '../stores';
   import type { Image, ImgData, ImgInfo, Sort } from '../types';
+  import { color } from '../ulit';
   import RangeSlider from 'svelte-range-slider-pips';
   import DrawThumbnail from './vis/DrawThumbnail.svelte';
   import VisToggle from './vis/VisToggle.svelte';
+  import Checked from '../assets/checked.svelte';
+  import Unchecked from '../assets/unchecked.svelte';
+  import CheckedMinus from '../assets/checked-minus.svelte';
   import {
     Menu,
     MenuButton,
@@ -22,11 +27,14 @@
   import './collectionSlider.css';
   import SortUp from '../assets/sort-up.svelte';
   import SortDown from '../assets/sort-down.svelte';
+  import { every } from 'd3';
   export let folderName = '';
   let imgHeight = [100];
   let gap = 4;
   $: tagText = '';
   $: selected = {};
+  $: imgTags = new Array<number>();
+  $: imgTags2 = new Array<number>();
   let sortBy: Sort = { sortByIOU: 0, sortByID: 1 };
 
   function rescaleImages(
@@ -105,6 +113,28 @@
     imgInfo.length > 0
       ? imgInfo[imgInfo.length - 1].top + imgInfo[imgInfo.length - 1].height
       : 0;
+
+  function UpdateImgTag() {
+    let count = new Array($tags.length).fill(0);
+    Object.entries($selectedImgs).forEach(([name, data]) => {
+      data.tags.forEach((tag) => {
+        count[$tags.indexOf(tag)] += 1;
+      });
+    });
+
+    count.forEach((val, i) => {
+      if (Object.keys($selectedImgs).length === val) {
+        imgTags[i] = 2;
+      } else if (val > 0) {
+        imgTags[i] = 1;
+      } else {
+        imgTags[i] = 0;
+      }
+    });
+
+    imgTags2 = [...imgTags];
+  }
+
   function UpdateSelectedImgs(id: string, data: ImgData, checked: boolean) {
     let selectImgUpdate = { ...$selectedImgs };
     if (checked) {
@@ -114,15 +144,51 @@
     }
     selected = selectImgUpdate;
     $selectedImgs = selectImgUpdate;
+    UpdateImgTag();
   }
+
   function addTag() {
     Object.entries(selected).forEach(([name, prop]) => {
       prop.tags.push(tagText);
     });
+    if ($tags.indexOf(tagText) === -1) {
+      $tags.push(tagText);
+      imgTags = imgTags
+        .concat(Array($tags.length).fill(0))
+        .slice(0, $tags.length);
+    }
     tagText = '';
     //forces updates the images
     imgInfo = imgInfo;
+    UpdateImgTag();
   }
+
+  function applyTags() {
+    imgTags2.forEach((val, index) => {
+      if (val === imgTags[index]) {
+        return;
+      }
+      const tagName = $tags[index];
+      //Delete
+      if (val === 0) {
+        Object.entries($selectedImgs).forEach(([name, data]) => {
+          if (data.tags.includes(tagName)) {
+            data.tags = data.tags.filter((elem) => elem !== tagName);
+          }
+        });
+      } else {
+        //Add
+        Object.entries($selectedImgs).forEach(([name, data]) => {
+          if (!data.tags.includes(tagName)) {
+            data.tags.push(tagName);
+          }
+        });
+      }
+    });
+    imgTags = imgTags2;
+    imgInfo = imgInfo;
+  }
+
   function ClearAllSelectedImgs() {
     $selectedImgs = {};
     selected = {};
@@ -189,6 +255,14 @@
       gap
     );
   }
+
+  const handleCheck = (idx: number) => {
+    if (imgTags2[idx] === 0) {
+      imgTags2[idx] = 2;
+    } else {
+      imgTags2[idx] = 0;
+    }
+  };
 </script>
 
 <div
@@ -315,6 +389,43 @@
                     >
                   </div>
                 </div>
+              {:else if $tags.length > 0}
+                <div class="tag-list">
+                  {#each $tags as tag, i}
+                    <span
+                      class="tags-set"
+                      on:click={(e) => handleCheck(i)}
+                      on:keydown={(e) => handleCheck(i)}
+                    >
+                      {#if imgTags2[i] === 2}
+                        <Checked size={16} color={color[i % 10]} />
+                      {:else if imgTags2[i] === 1}
+                        <CheckedMinus size={16} color={color[i % 10]} />
+                      {:else}
+                        <Unchecked size={16} color={color[i % 10]} />
+                      {/if}
+                      {tag}
+                    </span>
+                  {/each}
+                </div>
+              {/if}
+              {#if !imgTags.every((val, idx) => val === imgTags2[idx])}
+                <div class="panel-row">
+                  <div
+                    class="tags-button"
+                    on:click={(e) => {
+                      applyTags();
+                    }}
+                    on:keypress={(e) => {
+                      applyTags();
+                    }}
+                  >
+                    <span
+                      class="tags-span"
+                      style="display:flex; justify-content:center;">Apply</span
+                    >
+                  </div>
+                </div>
               {/if}
             </div>
           </MenuItems>
@@ -430,6 +541,19 @@
 </div>
 
 <style>
+  .tags-set {
+    color: rgb(255, 255, 255);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-direction: column;
+  }
+
   .tags-input {
     background-color: transparent;
     color: rgb(255, 255, 255);

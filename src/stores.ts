@@ -103,6 +103,7 @@ export let colorMap: Writable<StringNumMap>;
 export let confidence: Writable<[number, number]>;
 export let detectionSize: Writable<[number, number]>;
 export let topHeight: Writable<number>;
+export let tags: Writable<Array<string>>;
 
 // Set the model for each store you create.
 export function setStoreModels(model: DOMWidgetModel): void {
@@ -146,4 +147,5 @@ export function setStoreModels(model: DOMWidgetModel): void {
   colorMap = writable<StringNumMap>({});
   confidence = writable<[number, number]>([0.7, 1.0]);
   detectionSize = writable<[number, number]>([0.01, 0.4]);
+  tags = writable<Array<string>>([]);
 }
