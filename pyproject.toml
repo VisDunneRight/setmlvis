@@ -35,8 +35,9 @@ dependencies = [
     "ipywidgets>=7.0.0",
     "shapely>=2.0.1",
     "Pillow>=9.5",
+    "rtree>=1.1.0",
 ]
-version = "0.2.5.dev0"
+version = "0.2.8"
 
 [project.optional-dependencies]
 docs = [
@@ -106,7 +107,7 @@ file = [
 ]
 
 [tool.tbump.version]
-current = "0.1.0.dev0"
+current = "0.2.7"
 regex = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)((?P<channel>a|b|rc|.dev)(?P<release>\\d+))?"
 
 [tool.tbump.git]

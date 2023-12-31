@@ -27,7 +27,6 @@
   import './collectionSlider.css';
   import SortUp from '../assets/sort-up.svelte';
   import SortDown from '../assets/sort-down.svelte';
-  import { every } from 'd3';
   export let folderName = '';
   let imgHeight = [100];
   let gap = 4;
@@ -629,6 +628,7 @@
     padding: 7px;
     z-index: 2;
     justify-content: space-between;
+    box-sizing: border-box;
     background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
   }
 
@@ -651,7 +651,8 @@
   }
 
   :global(.collection-menu .img-select) {
-    width: 50px;
+    width: 56px;
+    height: 28px;
     padding: 0.25rem 0.75rem;
     line-height: 2rem;
     border-radius: 1rem;
@@ -662,6 +663,7 @@
     cursor: pointer;
     display: flex;
     justify-content: space-between;
+    gap: 8px;
   }
 
   :global(.collection-menu .tag-select) {
@@ -718,6 +720,7 @@
   .image-size {
     width: 10rem;
     padding-right: 1rem;
+    height: 36px;
   }
 
   /* #scrollBar::-webkit-scrollbar-track

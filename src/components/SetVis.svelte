@@ -259,13 +259,11 @@
     .range([modelRow(metaModel.length), padding.top]);
 
   let yTicks: Array<number> = [];
-  $: step = Math.ceil((extentY[1] - extentY[0]) / config.ytickCount / 10) * 10;
 
   function updateTicks(extentY: number[]) {
-    yTicks = [];
-    for (let i = 0; i <= config.ytickCount; i++) {
-      yTicks.push(i * step + extentY[0]);
-    }
+    let niceExtent = d3.nice(extentY[0], extentY[1], config.ytickCount);
+    yTicks = d3.ticks(niceExtent[0], niceExtent[1], config.ytickCount);
+    console.log(extentY, yTicks);
   }
   $: updateTicks(extentY);
 
@@ -632,6 +630,7 @@
           <line x2={columnSpacing(data.length > 0 ? data.length + 1 : 0)} />
         </g>
       {/each}
+
       {#each setData as col, i}
         <g
           class="column"
@@ -661,6 +660,7 @@
             {selectModel}
             {colSelected}
             {barSelected}
+            maxY={yTicks[yTicks.length - 1]}
             breakdown={$breakdown}
             on:mousemove={(event) => {
               evt = event;
@@ -714,6 +714,7 @@
               (setData.length > 0 ? setData.length + 1 : 0)}
             {barSelected}
             breakdown={$breakdown}
+            maxY={yTicks[yTicks.length - 1]}
             on:mousemove={(event) => {
               evt = event;
               hideTooltip = false;

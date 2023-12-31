@@ -47,7 +47,6 @@
 
     let img = imgs[selectedImg.imgId];
     if (selectedImg.gtShape) {
-      console.log(selectedImg.gtShape, img.ground_truth);
       for (let gt of img.ground_truth) {
         if (!checkArray(selectedImg.gtShape, ground_truth[gt])) {
           groundTruth.data.push({
@@ -58,6 +57,7 @@
         }
       }
     }
+    console.log(models);
     Object.entries(models).forEach((model) => {
       const names = model[0].split(',');
 
@@ -67,6 +67,7 @@
           if (obj.imgId === selectedImg.imgId) {
             for (const namestr of names) {
               if (namestr === '' || !(namestr in selectedImg.boxes)) {
+                //This seems wrong
                 continue;
               }
               if (!(namestr in detections)) {
@@ -182,7 +183,11 @@
 <Accordion>
   <span slot="head">TAGS</span>
   <div slot="details">
-    <p>We going to add tag information here.</p>
+    {#if $selectedImg}
+      {#each $selectedImg.tags as tag}
+        <p>{tag}</p>
+      {/each}
+    {/if}
   </div>
 </Accordion>
 <Accordion>

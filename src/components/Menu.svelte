@@ -123,5 +123,6 @@
     float: left;
     border: 1px solid rgb(226, 226, 226);
     padding: 0px 4px 0px 4px;
+    box-sizing: border-box;
   }
 </style>
