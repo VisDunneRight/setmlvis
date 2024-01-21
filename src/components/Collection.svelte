@@ -27,7 +27,6 @@
   import './collectionSlider.css';
   import SortUp from '../assets/sort-up.svelte';
   import SortDown from '../assets/sort-down.svelte';
-  import { every } from 'd3';
   export let folderName = '';
   let imgHeight = [100];
   let gap = 4;
@@ -114,18 +113,30 @@
       ? imgInfo[imgInfo.length - 1].top + imgInfo[imgInfo.length - 1].height
       : 0;
 
-  function UpdateImgTag() {
-    let count = new Array($tags.length).fill(0);
-    Object.entries($selectedImgs).forEach(([name, data]) => {
-      data.tags.forEach((tag) => {
-        count[$tags.indexOf(tag)] += 1;
-      });
+  function countImgTag() {
+    //Create variable to check if all the
+    Object.entries($tags).forEach(([, tag]) => {
+      tag.count = 0;
     });
 
-    count.forEach((val, i) => {
-      if (Object.keys($selectedImgs).length === val) {
+    Object.entries($dataset.models).forEach(([name, dataInfo]) => {
+      dataInfo.forEach((ele) => {
+        Object.entries(ele.detections).forEach(([id, detect]) => {
+          detect.tags.forEach((tag, i) => {
+            if (tag in $tags) {
+              $tags[tag].count += 1;
+            }
+          });
+        });
+      });
+    });
+  }
+
+  function UpdateImgTag() {
+    Object.entries($tags).forEach(([name, val], i) => {
+      if (Object.keys($selectedImgs).length === val.count) {
         imgTags[i] = 2;
-      } else if (val > 0) {
+      } else if (val.count > 0) {
         imgTags[i] = 1;
       } else {
         imgTags[i] = 0;
@@ -133,6 +144,7 @@
     });
 
     imgTags2 = [...imgTags];
+    $tags = $tags;
   }
 
   function UpdateSelectedImgs(id: string, data: ImgData, checked: boolean) {
@@ -144,6 +156,7 @@
     }
     selected = selectImgUpdate;
     $selectedImgs = selectImgUpdate;
+    countImgTag();
     UpdateImgTag();
   }
 
@@ -151,15 +164,17 @@
     Object.entries(selected).forEach(([name, prop]) => {
       prop.tags.push(tagText);
     });
-    if ($tags.indexOf(tagText) === -1) {
-      $tags.push(tagText);
+
+    if (!(tagText in $tags)) {
+      $tags[tagText] = { name: tagText, selected: false, count: 0 };
       imgTags = imgTags
-        .concat(Array($tags.length).fill(0))
-        .slice(0, $tags.length);
+        .concat(Array(Object.entries($tags).length).fill(0))
+        .slice(0, Object.entries($tags).length);
     }
     tagText = '';
     //forces updates the images
     imgInfo = imgInfo;
+    countImgTag();
     UpdateImgTag();
   }
 
@@ -168,7 +183,8 @@
       if (val === imgTags[index]) {
         return;
       }
-      const tagName = $tags[index];
+      console.log('Apply Tag:', $tags);
+      const tagName = Object.keys($tags)[index];
       //Delete
       if (val === 0) {
         Object.entries($selectedImgs).forEach(([name, data]) => {
@@ -187,6 +203,7 @@
     });
     imgTags = imgTags2;
     imgInfo = imgInfo;
+    countImgTag();
   }
 
   function ClearAllSelectedImgs() {
@@ -389,9 +406,9 @@
                     >
                   </div>
                 </div>
-              {:else if $tags.length > 0}
+              {:else if Object.keys($tags).length > 0}
                 <div class="tag-list">
-                  {#each $tags as tag, i}
+                  {#each Object.keys($tags) as tag, i}
                     <span
                       class="tags-set"
                       on:click={(e) => handleCheck(i)}
@@ -629,6 +646,7 @@
     padding: 7px;
     z-index: 2;
     justify-content: space-between;
+    box-sizing: border-box;
     background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
   }
 
@@ -651,7 +669,8 @@
   }
 
   :global(.collection-menu .img-select) {
-    width: 50px;
+    width: 56px;
+    height: 28px;
     padding: 0.25rem 0.75rem;
     line-height: 2rem;
     border-radius: 1rem;
@@ -662,6 +681,7 @@
     cursor: pointer;
     display: flex;
     justify-content: space-between;
+    gap: 8px;
   }
 
   :global(.collection-menu .tag-select) {
@@ -718,6 +738,7 @@
   .image-size {
     width: 10rem;
     padding-right: 1rem;
+    height: 36px;
   }
 
   /* #scrollBar::-webkit-scrollbar-track

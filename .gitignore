@@ -167,3 +167,5 @@ env
 droneProjectedData.json
 twoModelsDict.json
 examples/twoModelsDictUpdated.json
+examples/carSatelliteDataGoodImage/*
+examples/carSatelliteDataGoodImage.json

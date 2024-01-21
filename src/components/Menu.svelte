@@ -1,8 +1,28 @@
 <script lang="ts">
   import Group from './menuComp/Group.svelte';
   import { fly } from 'svelte/transition';
-  import { height, menuWidth, IOU, confidence, detectionSize } from '../stores';
-  import type { MenuItem } from '../types';
+  import VisToggle from './vis/VisToggle.svelte';
+
+  import { color } from '../ulit';
+  import CheckAccordion from './detail/CheckAccordion.svelte';
+  import Checked from '../assets/checked.svelte';
+  import Unchecked from '../assets/unchecked.svelte';
+  import {
+    height,
+    menuWidth,
+    IOU,
+    confidence,
+    detectionSize,
+    weightedConfidence,
+    showWeightedConfidence,
+    tags,
+    showTags,
+    dataset,
+    selectedCol,
+    barSelected,
+    colSelected,
+  } from '../stores';
+  import type { ImgData, MenuItem } from '../types';
   import rawMenu from '../menu.json';
   const menu = rawMenu as MenuItem[];
 
@@ -32,14 +52,53 @@
       $confidence = values;
     }
   };
+
+  menuMap['weightedconfidence'].updatefunction = function (
+    values: [number, number]
+  ) {
+    if (values[0] > values[1]) {
+      $weightedConfidence = [values[1], values[0]];
+    } else {
+      $weightedConfidence = values;
+    }
+  };
   menuMap['detectionSize'].updatefunction = function (
     values: [number, number]
   ) {
     $detectionSize = values;
   };
+  function updateWConf() {
+    $showWeightedConfidence = !$showWeightedConfidence;
+  }
   //Set the starting value for the function to user passed value
   menuMap['truePositiveIOU'].value = $IOU;
   //https://iconsvg.xyz/
+
+  function updateShowTags() {
+    $showTags = !$showTags;
+  }
+  function updateTagSelection() {
+    let selection: ImgData[] = [];
+    Object.entries($dataset.models).forEach(([name, dataInfo]) => {
+      dataInfo.forEach((dataRes) => {
+        Object.entries(dataRes.detections).forEach(([type, info]) => {
+          for (const tag of info.tags) {
+            if (tag in $tags && $tags[tag].selected) {
+              selection.push(info);
+              break;
+            }
+          }
+        });
+      });
+    });
+    $selectedCol = selection;
+  }
+  function handleCheck(tagName: string) {
+    $tags[tagName].selected = !$tags[tagName].selected;
+    updateTagSelection();
+    $barSelected = '';
+    $colSelected = -1;
+  }
 </script>
 
 {#if menuOpen === true}
@@ -66,8 +125,56 @@
         </svg>
       </button>
     </div>
+    <!-- Add check  -->
+    <VisToggle
+      message={'WTD Confidence'}
+      activeColor="blueviolet"
+      inactiveColor="#540077"
+      enabled={$showWeightedConfidence}
+      update={updateWConf}
+    />
     <div class="accordion-container">
-      <Group groups={menu} />
+      {#each menu as option}
+        {#if option.name !== 'Weighted Confidence' && option.name !== 'Confidence'}
+          <Group {option} />
+        {:else if $showWeightedConfidence && option.name === 'Weighted Confidence'}
+          <Group {option} />
+        {:else if !$showWeightedConfidence && option.name === 'Confidence'}
+          <Group {option} />
+        {/if}
+      {/each}
+      <!-- on:click={(e) => updateImg(img)}
+              on:keydown={(e) => updateImg(img)} -->
+      <CheckAccordion
+        check={$showTags === true ? 2 : 0}
+        updateCheck={updateShowTags}
+      >
+        <span slot="head">Tags</span>
+        <span slot="info">{Object.keys($tags).length}</span>
+        <div slot="details">
+          {#if Object.keys($tags).length > 0}
+            {#each Object.entries($tags) as [name, tag], i}
+              <div class="line">
+                <span
+                  class="checkmark"
+                  on:click={(e) => handleCheck(name)}
+                  on:keydown={(e) => handleCheck(name)}
+                >
+                  {#if tag.selected}
+                    <Checked size={20} color={color[i % 10]} />
+                  {:else}
+                    <Unchecked size={20} color={color[i % 10]} />
+                  {/if}
+                  <span>{name}</span>
+                </span>
+                <span class="text-line">{tag.count}</span>
+              </div>
+            {/each}
+          {:else}
+            <p>No Tags</p>
+          {/if}
+        </div>
+      </CheckAccordion>
     </div>
   </div>
 {:else}
@@ -123,5 +230,22 @@
     float: left;
     border: 1px solid rgb(226, 226, 226);
     padding: 0px 4px 0px 4px;
+    box-sizing: border-box;
+  }
+  .checkmark {
+    cursor: pointer;
+    align-items: center;
+    display: flex;
+    gap: 5px;
+  }
+  .text-line {
+    padding-right: 10px;
+  }
+  .line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f4f4f4;
+    padding: 2px;
   }
 </style>

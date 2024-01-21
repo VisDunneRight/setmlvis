@@ -7,9 +7,14 @@
     selectedCol,
     colorMap,
     confidence,
+    weightedConfidence,
+    showWeightedConfidence,
     breakdown,
     windowWidth,
     menuWidth,
+    colSelected,
+    barSelected,
+    tags,
   } from '../stores';
   import type { DataRes, ImgData, Data } from '../types';
   import { color, colorTypes } from '../ulit';
@@ -20,8 +25,6 @@
   import VisToggle from './vis/VisToggle.svelte';
 
   $: mouseOverI = -1;
-  $: colSelected = -1;
-  $: barSelected = '';
 
   const metaModel = $dataset['meta']['modelNames'];
   const padding = { top: 20, right: 15, bottom: 22, left: 10 };
@@ -83,7 +86,13 @@
     confid: [number, number],
     iou: number
   ) {
-    const avg = d3.mean(info.confidence, (d: number) => d);
+    let avg: number;
+    if ($showWeightedConfidence) {
+      avg = info.weightedConfidence;
+    } else {
+      const res = d3.mean(info.confidence, (d: number) => d);
+      avg = res === undefined ? 0 : res;
+    }
     if (
       info !== undefined &&
       avg !== undefined &&
@@ -227,9 +236,12 @@
               column.type[info.category] += 1;
             }
           });
-          column['falseNeg'] += obj.FN.values.length;
-          console.log(name, obj.FN);
         });
+
+        dset['false_negatives'][name.split(',')[0]].forEach((item) => {
+          column['falseNeg'] += item.values.length;
+        });
+
         if (
           showEmptySets ||
           column.truePos + column.falsePos + column.falseNeg > 0
@@ -244,7 +256,7 @@
   $: data = updateData(
     $dataset,
     $IOU,
-    $confidence,
+    $showWeightedConfidence ? $weightedConfidence : $confidence,
     $breakdown,
     showEmptySets,
     showDifferenceSet
@@ -259,13 +271,10 @@
     .range([modelRow(metaModel.length), padding.top]);
 
   let yTicks: Array<number> = [];
-  $: step = Math.ceil((extentY[1] - extentY[0]) / config.ytickCount / 10) * 10;
 
   function updateTicks(extentY: number[]) {
-    yTicks = [];
-    for (let i = 0; i <= config.ytickCount; i++) {
-      yTicks.push(i * step + extentY[0]);
-    }
+    let niceExtent = d3.nice(extentY[0], extentY[1], config.ytickCount);
+    yTicks = d3.ticks(niceExtent[0], niceExtent[1], config.ytickCount);
   }
   $: updateTicks(extentY);
 
@@ -292,10 +301,11 @@
 
   function selectModel(model: ColumnType, ind: number, type: string) {
     let selection: ImgData[] = [];
+    let conf = $showWeightedConfidence ? $weightedConfidence : $confidence;
     if (type === 'true positive') {
       model.data.forEach((obj) => {
         Object.entries(obj.detections).forEach(([type, info]) => {
-          if (determinePostivity(info, $confidence, $IOU) === 2) {
+          if (determinePostivity(info, conf, $IOU) === 2) {
             selection.push(info);
           }
         });
@@ -303,14 +313,19 @@
     } else if (type === 'false positive') {
       model.data.forEach((obj) => {
         Object.entries(obj.detections).forEach(([type, info]) => {
-          if (determinePostivity(info, $confidence, $IOU) === 1) {
+          if (determinePostivity(info, conf, $IOU) === 1) {
             selection.push(info);
           }
         });
       });
+    } else if (type === 'false negative') {
+      console.log('This far');
     }
-    colSelected = ind;
-    barSelected = type;
+    for (const tagName in $tags) {
+      $tags[tagName].selected = false;
+    }
+    $colSelected = ind;
+    $barSelected = type;
     $selectedCol = selection;
   }
   function clearSet() {
@@ -332,6 +347,7 @@
       modelRange: setRange,
       truePos: 0,
       falsePos: 0,
+      falseNeg: 0,
       type: {
         duplicate: 0,
         low_threshold: 0,
@@ -394,7 +410,10 @@
 
   $: svgWidth = columnSpacing(setData.length + 1 + data.length);
   $: if (setData.length > 0) {
-    updateSelection($IOU, $confidence);
+    updateSelection(
+      $IOU,
+      $showWeightedConfidence ? $weightedConfidence : $confidence
+    );
   }
   let evt: CustomEvent<any>;
   let hideTooltip = true;
@@ -632,6 +651,7 @@
           <line x2={columnSpacing(data.length > 0 ? data.length + 1 : 0)} />
         </g>
       {/each}
+
       {#each setData as col, i}
         <g
           class="column"
@@ -659,8 +679,9 @@
             {modelRow}
             {y}
             {selectModel}
-            {colSelected}
-            {barSelected}
+            colSelected={$colSelected}
+            barSelected={$barSelected}
+            maxY={yTicks[yTicks.length - 1]}
             breakdown={$breakdown}
             on:mousemove={(event) => {
               evt = event;
@@ -710,10 +731,11 @@
             {modelRow}
             {y}
             {selectModel}
-            colSelected={colSelected +
+            colSelected={$colSelected +
               (setData.length > 0 ? setData.length + 1 : 0)}
-            {barSelected}
+            barSelected={$barSelected}
             breakdown={$breakdown}
+            maxY={yTicks[yTicks.length - 1]}
             on:mousemove={(event) => {
               evt = event;
               hideTooltip = false;

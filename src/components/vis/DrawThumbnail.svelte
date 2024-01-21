@@ -14,6 +14,7 @@
     breakdown,
     IOU,
     tags,
+    showTags,
   } from '../../stores';
   import { color, colorTypes } from '../../ulit';
 
@@ -97,16 +98,20 @@
         <title>{imgInfo.imgName}</title>
       </svg>
     </button>
-    <div class="tag-display">
-      {#each data.tags as tag}
-        <div
-          title={tag}
-          style="background-color:{color[$tags.indexOf(tag) % 10]};"
-        >
-          {tag}
-        </div>
-      {/each}
-    </div>
+    {#if $showTags}
+      <div class="tag-display">
+        {#each data.tags as tag}
+          <div
+            title={tag}
+            style="background-color:{color[
+              Object.keys($tags).indexOf(tag) % 10
+            ]};"
+          >
+            {tag}
+          </div>
+        {/each}
+      </div>
+    {/if}
     <div class="checkbox-pos {selected === true ? 'checkbox-show' : ''}">
       <div />
       <Checkbox checked={selected} {updateSelection} />

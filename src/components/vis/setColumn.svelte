@@ -1,6 +1,6 @@
 <script>
   import { colorTypes } from '../../ulit';
-  import { getContext, createEventDispatcher } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
 
   export let col;
   export let i;
@@ -14,15 +14,63 @@
   export let colSelected;
   export let barSelected;
   export let breakdown;
-  // if(col.truePos + col.false_pos > )
+  export let maxY;
 
   const dispatch = createEventDispatcher();
+  let duplicate = 0;
+  let far_away = 0;
+  let wrong_class = 0;
+  let low_threshold = 0;
+  let truePos = 0;
+  let falsePos = 0;
+  let falseNeg = 0;
+  let scaled = false;
 
-  $: duplicate = col.truePos + col.type.duplicate;
-  $: far_away = duplicate + col.type.far_away;
-  $: wrong_class = far_away + col.type.wrong_class;
-  $: low_threshold = wrong_class + col.type.low_threshold;
+  $: if (col.truePos + col.falsePos + col.falseNeg > maxY) {
+    let newMax = col.truePos + col.falsePos + col.falseNeg;
+    falseNeg = (col.falseNeg / newMax) * maxY;
+    truePos = (col.truePos / newMax) * maxY;
+    falsePos = (col.falsePos / newMax) * maxY;
+    duplicate = truePos + (col.type.duplicate / newMax) * maxY;
+    far_away = duplicate + (col.type.far_away / newMax) * maxY;
+    wrong_class = far_away + (col.type.wrong_class / newMax) * maxY;
+    low_threshold = wrong_class + (col.type.low_threshold / newMax) * maxY;
+    scaled = true;
+  } else {
+    truePos = col.truePos;
+    falsePos = col.falsePos;
+    falseNeg = col.falseNeg;
+    duplicate = col.truePos + col.type.duplicate;
+    far_away = duplicate + col.type.far_away;
+    wrong_class = far_away + col.type.wrong_class;
+    low_threshold = wrong_class + col.type.low_threshold;
+    scaled = false;
+  }
 </script>
+
+{#if colSelected === i}
+  {@const offsetY = 4}
+  {@const offsetX = 3}
+  {#if barSelected === 'true positive'}
+    <rect
+      x={-offsetX}
+      y={y(truePos) - offsetY}
+      width={config.circleRadius * 2 + 2 * offsetX}
+      height={y(0) - y(truePos) + offsetY * 2}
+      class={'group'}
+      ry={8}
+    />
+  {:else if barSelected === 'false positive'}
+    <rect
+      x={-offsetX}
+      y={y(falsePos + truePos) - offsetY}
+      width={config.circleRadius * 2 + 2 * offsetX}
+      height={y(truePos) - y(falsePos + truePos) + offsetY * 2}
+      class={'group'}
+      ry={8}
+    />
+  {/if}
+{/if}
 
 <rect
   x={0}
@@ -97,10 +145,12 @@
 <rect
   on:mousedown={() => selectModel(col, i, 'true positive')}
   x={0}
-  y={y(col.truePos)}
+  y={y(truePos)}
   width={config.circleRadius * 2}
-  height={y(0) - y(col.truePos)}
-  fill={colorTypes['true_pos']}
+  height={y(0) - y(truePos)}
+  fill={colSelected === i && barSelected === 'true positive'
+    ? colorTypes['true_pos_selected']
+    : colorTypes['true_pos']}
   class="pointer {colSelected === i && 'true positive' === barSelected
     ? 'selected'
     : ''}"
@@ -118,10 +168,12 @@
   <rect
     on:mousedown={() => selectModel(col, i, 'false positive')}
     x={0}
-    y={y(col.falsePos + col.truePos)}
+    y={y(falsePos + truePos)}
     width={config.circleRadius * 2}
-    height={y(col.truePos) - y(col.falsePos + col.truePos)}
-    fill={colorTypes['false_pos']}
+    height={y(truePos) - y(falsePos + truePos)}
+    fill={colSelected === i && barSelected === 'false positive'
+      ? colorTypes['false_pos_selected']
+      : colorTypes['false_pos']}
     class="pointer {colSelected === i && 'false positive' === barSelected
       ? 'selected'
       : ''}"
@@ -153,7 +205,7 @@
       x={0}
       y={y(duplicate)}
       width={config.circleRadius * 2}
-      height={y(col.truePos) - y(duplicate)}
+      height={y(truePos) - y(duplicate)}
       fill={colorTypes['duplicate']}
     />
     <rect
@@ -181,7 +233,7 @@
       x={0}
       y={y(low_threshold)}
       width={config.circleRadius * 2}
-      height={y(col.truePos) - y(low_threshold)}
+      height={y(truePos) - y(low_threshold)}
       stroke="none"
       stroke-width="3"
       fill="none"
@@ -198,10 +250,9 @@
 <rect
   on:mousedown={() => selectModel(col, i, 'false negative')}
   x={0}
-  y={y(col.falseNeg + col.falsePos + col.truePos)}
+  y={y(falseNeg + falsePos + truePos)}
   width={config.circleRadius * 2}
-  height={y(col.falsePos + col.truePos) -
-    y(col.falseNeg + col.falsePos + col.truePos)}
+  height={y(falsePos + truePos) - y(falseNeg + falsePos + truePos)}
   fill={colorTypes['false_neg']}
   class="pointer {colSelected === i && 'false negative' === barSelected
     ? 'selected'
@@ -215,6 +266,24 @@
   on:mouseout={(e) => dispatch('mouseout')}
   on:blur={(e) => dispatch('mouseout')}
 />
+
+<!-- Add Stroke scaled-->
+{#if scaled}
+  <line
+    x1={0}
+    x2={config.circleRadius * 2}
+    y1={y(maxY - 7)}
+    y2={y(maxY - 5)}
+    style="stroke:white; stroke-width:1;"
+  />
+  <line
+    x1={0}
+    x2={config.circleRadius * 2}
+    y1={y(maxY - 5)}
+    y2={y(maxY - 3)}
+    style="stroke:white; stroke-width:1;"
+  />
+{/if}
 
 <!-- 'duplicate': number,
 'low_threshold': number,

@@ -19,4 +19,7 @@ export const colorTypes = {
   wrong_class: '#ff5252',
   far_away: '#ff1744',
   duplicate: '#d50000',
+  true_pos_selected: '#265982',
+  false_neg_selected: '#58857a',
+  false_pos_selected: '#8f1011',
 };

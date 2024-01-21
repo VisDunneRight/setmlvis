@@ -1,13 +1,11 @@
 <script lang="ts">
   import Accordion from './Accordion.svelte';
-  import CheckAccordion from './CheckAccordion.svelte';
-  import Checked from '../../assets/checked.svelte';
-  import Unchecked from '../../assets/unchecked.svelte';
+  import Labels from './Labels.svelte';
   import {
     selectedImg,
     dataset,
-    colorMap,
     selectedImgBoxes,
+    selectedCol,
   } from '../../stores';
   import type {
     Image,
@@ -18,8 +16,10 @@
     GroundTruthObj,
     GroundTruth,
     Detection,
+    DetectObject,
   } from '../../types';
-  import { color } from '../../ulit';
+
+  $: labelType = 2;
 
   function checkArray(a: Array<any>, b: Array<any>) {
     if (a.length !== b.length) {
@@ -33,101 +33,155 @@
     return true;
   }
 
+  //0 = Selected
+  //1 = Filtered
+  //2 = All
   function getAllDetections(
     models: Models,
     imgs: Array<Image>,
     ground_truth: Array<ObjectDect>,
+    selectedCol: Array<ImgData>,
     selectedImg: ImgData | undefined
   ) {
-    let groundTruth: GroundTruthObj = { data: [], selected: 0 };
+    let groundTruth: GroundTruthObj = {
+      data: [],
+      selected: [0, 0, 0],
+    };
     let detections: Detection = {};
     if (selectedImg === undefined) {
       return;
     }
 
+    //Find all the ground truth
     let img = imgs[selectedImg.imgId];
-    if (selectedImg.gtShape) {
-      console.log(selectedImg.gtShape, img.ground_truth);
+    if (img) {
       for (let gt of img.ground_truth) {
-        if (!checkArray(selectedImg.gtShape, ground_truth[gt])) {
-          groundTruth.data.push({
-            id: gt,
-            shape: ground_truth[gt],
-            selected: false,
-          });
-        }
+        groundTruth.data.push({
+          id: gt,
+          shape: ground_truth[gt],
+          selected: false,
+          type: 2,
+        });
       }
     }
+
+    //Find all instances of the models
     Object.entries(models).forEach((model) => {
       const names = model[0].split(',');
-
       model[1].forEach((res) => {
         Object.entries(res.detections).forEach((detection) => {
           const obj = detection[1];
           if (obj.imgId === selectedImg.imgId) {
             for (const namestr of names) {
-              if (namestr === '' || !(namestr in selectedImg.boxes)) {
+              if (namestr === '') {
                 continue;
               }
               if (!(namestr in detections)) {
-                detections[namestr] = { data: [], selected: 0 };
+                detections[namestr] = { data: [], selected: [0, 0, 0] };
               }
-              if (!checkArray(selectedImg.boxes[namestr], obj.boxes[namestr])) {
-                detections[namestr].data.push({
-                  data: obj.boxes[namestr],
-                  selected: false,
-                  id: obj.id,
-                });
-              }
+
+              detections[namestr].data.push({
+                data: obj.boxes[namestr],
+                selected: false,
+                id: obj.id,
+                type: 2,
+              });
             }
           }
         });
       });
     });
-    return { ground_truth: groundTruth, detections: detections };
-  }
 
+    let allDetections = { ground_truth: groundTruth, detections: detections };
+
+    //Grab groundtruth from the filtered data
+    selectedCol.forEach((col) => {
+      if (col.imgId === selectedImg.imgId && col.gtShape) {
+        for (let gt of allDetections.ground_truth.data) {
+          if (checkArray(col.gtShape, gt.shape)) {
+            if (col.id === selectedImg.id) {
+              gt.type = 0;
+            } else {
+              gt.type = 1;
+            }
+          }
+        }
+      }
+    });
+
+    //Grab objections from the filtered data
+    let ids: Array<string> = [];
+    selectedCol.forEach((col) => {
+      if (col.imgId === selectedImg.imgId) {
+        ids.push(col.id);
+      }
+    });
+
+    for (const namstr in allDetections.detections) {
+      allDetections.detections[namstr].data.forEach((detect) => {
+        if (detect.id === selectedImg.id) {
+          detect.type = 0;
+        } else if (ids.includes(detect.id)) {
+          detect.type = 1;
+        }
+      });
+    }
+
+    return allDetections;
+  }
+  function updateImgBox(selectImgBox: DetectObject) {
+    let count = [0, 0, 0];
+    const data = selectImgBox.data;
+    for (const detect of data) {
+      if (detect.selected) {
+        for (let i = detect.type; i <= 2; i++) {
+          count[i]++;
+        }
+      }
+    }
+
+    for (let i = 0; i <= 2; i++) {
+      if (count[i] === 0) {
+        selectImgBox.selected[i] = 0;
+      } else if (count[i] < data.filter((x) => x.type <= i).length) {
+        selectImgBox.selected[i] = 1;
+      } else {
+        selectImgBox.selected[i] = 2;
+      }
+    }
+  }
   function updateImgBoxes() {
     if ($selectedImgBoxes) {
       for (const name in $selectedImgBoxes['detections']) {
-        let count = 0;
-        const data = $selectedImgBoxes['detections'][name].data;
-        for (const detect of data) {
-          if (detect.selected) {
-            count++;
-          }
-        }
-        if (count === 0) {
-          $selectedImgBoxes['detections'][name].selected = 0;
-        } else if (count < data.length) {
-          $selectedImgBoxes['detections'][name].selected = 1;
-        } else {
-          $selectedImgBoxes['detections'][name].selected = 2;
-        }
-      }
-    }
-    $selectedImgBoxes = $selectedImgBoxes;
-  }
-  function updateGroundBoxes() {
-    if ($selectedImgBoxes) {
-      let count = 0;
-      const data = $selectedImgBoxes['ground_truth'].data;
-      for (const detect of data) {
-        if (detect.selected) {
-          count++;
-        }
-      }
-      if (count === 0) {
-        $selectedImgBoxes['ground_truth'].selected = 0;
-      } else if (count < data.length) {
-        $selectedImgBoxes['ground_truth'].selected = 1;
-      } else {
-        $selectedImgBoxes['ground_truth'].selected = 2;
+        updateImgBox($selectedImgBoxes['detections'][name]);
       }
     }
     $selectedImgBoxes = $selectedImgBoxes;
   }
 
+  function updateGroundBoxes() {
+    if ($selectedImgBoxes) {
+      let count = [0, 0, 0];
+      const data = $selectedImgBoxes['ground_truth'].data;
+      for (const detect of data) {
+        if (detect.selected) {
+          for (let i = detect.type; i <= 2; i++) {
+            count[i]++;
+          }
+        }
+      }
+      for (let i = 0; i <= 2; i++) {
+        if (count[i] === 0) {
+          $selectedImgBoxes['ground_truth'].selected[i] = 0;
+        } else if (count[i] < data.filter((x) => x.type <= i).length) {
+          $selectedImgBoxes['ground_truth'].selected[i] = 1;
+        } else {
+          $selectedImgBoxes['ground_truth'].selected[i] = 2;
+        }
+      }
+    }
+    $selectedImgBoxes = $selectedImgBoxes;
+  }
   function updateImg(imgSelected: Detect) {
     imgSelected.selected = !imgSelected.selected;
     updateImgBoxes();
@@ -136,26 +190,56 @@
     gt.selected = !gt.selected;
     updateGroundBoxes();
   }
-  function updateEntireSet(name: string) {
+  function updateEntireSet(name: string, type: number) {
     if ($selectedImgBoxes) {
-      $selectedImgBoxes['detections'][name].selected =
-        $selectedImgBoxes['detections'][name].selected > 0 ? 0 : 2;
-      for (let data of $selectedImgBoxes['detections'][name].data) {
-        data.selected = $selectedImgBoxes['detections'][name].selected === 2;
+      let newSetting =
+        $selectedImgBoxes['detections'][name].selected[type] > 0 ? 0 : 2;
+      for (let i = type; i >= 0; i--) {
+        $selectedImgBoxes['detections'][name].selected[i] = newSetting;
+        for (let data of $selectedImgBoxes['detections'][name].data) {
+          if (data.type === i) {
+            data.selected =
+              $selectedImgBoxes['detections'][name].selected[i] === 2;
+          }
+        }
       }
+      updateImgBox($selectedImgBoxes['detections'][name]);
       $selectedImgBoxes = $selectedImgBoxes;
     }
   }
-  function updateEntireGroundSet() {
+  function updateEntireGroundSet(type: number) {
     if ($selectedImgBoxes) {
-      $selectedImgBoxes['ground_truth'].selected =
-        $selectedImgBoxes['ground_truth'].selected > 0 ? 0 : 2;
-      for (let data of $selectedImgBoxes['ground_truth'].data) {
-        data.selected = $selectedImgBoxes['ground_truth'].selected === 2;
+      let newSetting =
+        $selectedImgBoxes['ground_truth'].selected[type] > 0 ? 0 : 2;
+      for (let i = type; i >= 0; i--) {
+        $selectedImgBoxes['ground_truth'].selected[i] = newSetting;
+        for (let data of $selectedImgBoxes['ground_truth'].data) {
+          if (data.type === i) {
+            data.selected =
+              $selectedImgBoxes['ground_truth'].selected[type] === 2;
+          }
+        }
       }
+      updateGroundBoxes();
       $selectedImgBoxes = $selectedImgBoxes;
     }
   }
+  function onLabelChange(selId: string) {
+    let newLabeltype = -1;
+    if (selId === 'selected') {
+      newLabeltype = 1;
+    } else if (selId === 'filtered') {
+      newLabeltype = 2;
+    } else if (selId === 'all') {
+      newLabeltype = 3;
+    }
+    if (newLabeltype === labelType) {
+      return;
+    } else {
+      labelType = newLabeltype;
+    }
+  }
+
   let meta: Image = undefined;
   $: if ($selectedImg) {
     meta = $dataset.imgs[$selectedImg?.imgId];
@@ -163,6 +247,7 @@
       $dataset.models,
       $dataset.imgs,
       $dataset.ground_truth,
+      $selectedCol,
       $selectedImg
     );
   }
@@ -182,125 +267,215 @@
 <Accordion>
   <span slot="head">TAGS</span>
   <div slot="details">
-    <p>We going to add tag information here.</p>
-  </div>
-</Accordion>
-<Accordion>
-  <span slot="head">SELECTED LABELS</span>
-  <div slot="details">
-    {#if $selectedImg}
-      <CheckAccordion colorCheck={color[$colorMap['ground_truth']]}>
-        <span slot="head">Ground Truth</span>
-        <span slot="info">{1}</span>
-        <div slot="details">
-          <p>Type: {$selectedImg.gtShape[0]}</p>
-          <p>x: {$selectedImg.gtShape[1]}</p>
-          <p>y: {$selectedImg.gtShape[2]}</p>
-          <p>x2: {$selectedImg.gtShape[3]}</p>
-          <p>y2: {$selectedImg.gtShape[4]}</p>
-        </div>
-      </CheckAccordion>
-      {#each Object.entries($selectedImg.boxes) as detection}
-        <CheckAccordion colorCheck={color[$colorMap[detection[0]]]} check={0}>
-          <span slot="head">{detection[0]}</span>
-          <span slot="info">{1}</span>
-          <div slot="details">
-            <div class="line">
-              <p>Confidence: {detection[1][5]}</p>
-            </div>
-          </div>
-        </CheckAccordion>
+    {#if $selectedImg && $selectedImg.tags.length > 0}
+      {#each $selectedImg.tags as tag}
+        <p>{tag}</p>
       {/each}
+    {:else}
+      <p>No Tags</p>
     {/if}
   </div>
 </Accordion>
 
-<Accordion open={true}>
-  <span slot="head">ALL LABELS</span>
-  <div slot="details">
-    {#if $selectedImgBoxes}
-      {#if $selectedImgBoxes['ground_truth'].data.length > 0}
-        <CheckAccordion
-          colorCheck={color[$colorMap['ground_truth']]}
-          check={$selectedImgBoxes['ground_truth'].selected}
-          updateCheck={updateEntireGroundSet}
-        >
-          <span slot="head">Ground Truth</span>
-          <span slot="info"
-            >{$selectedImgBoxes['ground_truth'].data.length}</span
-          >
-          <div slot="details">
-            {#each $selectedImgBoxes['ground_truth'].data as detection}
-              <div class="line">
-                <span
-                  class="checkmark"
-                  on:click={(e) => updateGroundImg(detection)}
-                  on:keydown={(e) => updateGroundImg(detection)}
-                >
-                  {#if detection.selected === true}
-                    <Checked
-                      size={20}
-                      color={color[$colorMap['ground_truth']]}
-                    />
-                  {:else}
-                    <Unchecked
-                      size={20}
-                      color={color[$colorMap['ground_truth']]}
-                    />
-                  {/if}
-                </span>
-                <p>ID: {detection.id}</p>
-              </div>
-            {/each}
-          </div>
-        </CheckAccordion>
-      {/if}
-      {#each Object.entries($selectedImgBoxes['detections']) as detection}
-        {#if detection[1].data.length > 0}
-          <CheckAccordion
-            colorCheck={color[$colorMap[detection[0]]]}
-            check={detection[1].selected}
-            updateCheck={() => updateEntireSet(detection[0])}
-          >
-            <span slot="head">{detection[0]}</span>
-            <span slot="info">{detection[1].data.length}</span>
-            <div slot="details">
-              {#each detection[1].data as img}
-                <div class="line">
-                  <span
-                    class="checkmark"
-                    on:click={(e) => updateImg(img)}
-                    on:keydown={(e) => updateImg(img)}
-                  >
-                    {#if img.selected === true}
-                      <Checked
-                        size={20}
-                        color={color[$colorMap[detection[0]]]}
-                      />
-                    {:else}
-                      <Unchecked
-                        size={20}
-                        color={color[$colorMap[detection[0]]]}
-                      />
-                    {/if}
-                  </span>
-                  <p>Confidence: {img.data[5]}</p>
-                </div>
-              {/each}
-            </div>
-          </CheckAccordion>
-        {/if}
-      {/each}
-    {/if}
-  </div>
-</Accordion>
+{#if $selectedImgBoxes}
+  {#if labelType === 1}
+    <Accordion open={true}>
+      <span slot="head" class="label-selection">
+        <span> LABELS </span>
+        <span class="label-blob">
+          <input
+            type="radio"
+            name="payment"
+            id="selected"
+            on:click={() => {
+              onLabelChange('selected');
+            }}
+            checked={labelType === 1}
+          />
+          <label for="selected" title="selected Image">
+            <i class="fa fa-circle-o" aria-hidden="true" />
+          </label>
+          <input
+            type="radio"
+            name="payment"
+            id="filtered"
+            on:click={() => {
+              onLabelChange('filtered');
+            }}
+            checked={false}
+          />
+          <label for="filtered" title="from selected collection">
+            <i class="fa fa-dot-circle-o" aria-hidden="true" />
+          </label>
+          <input
+            type="radio"
+            name="payment"
+            id="all"
+            on:click={() => {
+              onLabelChange('all');
+            }}
+            checked={false}
+          />
+          <label for="all" title="Across all detections">
+            <i class="fa fa-circle" aria-hidden="true" />
+            <!-- <span>All</span> -->
+          </label>
+        </span>
+      </span>
+      <div slot="details" id="label-select">
+        <Labels
+          groundTruth={$selectedImgBoxes['ground_truth']}
+          detectionBoxes={$selectedImgBoxes['detections']}
+          type={0}
+          {updateEntireGroundSet}
+          {updateGroundImg}
+          {updateImg}
+          {updateEntireSet}
+        />
+      </div>
+    </Accordion>
+  {:else if labelType === 2}
+    <Accordion open={true}>
+      <span slot="head" class="label-selection">
+        <span> LABELS </span>
+        <span class="label-blob">
+          <input
+            type="radio"
+            name="payment"
+            id="selected"
+            on:click={() => {
+              onLabelChange('selected');
+            }}
+            checked={false}
+          />
+          <label for="selected" title="selected Image">
+            <i class="fa fa-circle-o" aria-hidden="true" />
+          </label>
+          <input
+            type="radio"
+            name="payment"
+            id="filtered"
+            on:click={() => {
+              onLabelChange('filtered');
+            }}
+            checked={labelType === 2}
+          />
+          <label for="filtered" title="from selected collection">
+            <i class="fa fa-dot-circle-o" aria-hidden="true" />
+          </label>
+          <input
+            type="radio"
+            name="payment"
+            id="all"
+            on:click={() => {
+              onLabelChange('all');
+            }}
+            checked={false}
+          />
+          <label for="all" title="Across all detections">
+            <i class="fa fa-circle" aria-hidden="true" />
+            <!-- <span>All</span> -->
+          </label>
+        </span>
+      </span>
+      <div slot="details" id="label-select">
+        <Labels
+          groundTruth={$selectedImgBoxes['ground_truth']}
+          detectionBoxes={$selectedImgBoxes['detections']}
+          type={1}
+          {updateEntireGroundSet}
+          {updateGroundImg}
+          {updateImg}
+          {updateEntireSet}
+        />
+      </div>
+    </Accordion>
+  {:else}
+    <Accordion open={true}>
+      <span slot="head" class="label-selection">
+        <span> LABELS </span>
+        <span class="label-blob">
+          <input
+            type="radio"
+            name="payment"
+            id="selected"
+            on:click={() => {
+              onLabelChange('selected');
+            }}
+            checked={false}
+          />
+          <label for="selected" title="selected Image">
+            <i class="fa fa-circle-o" aria-hidden="true" />
+          </label>
+          <input
+            type="radio"
+            name="payment"
+            id="filtered"
+            on:click={() => {
+              onLabelChange('filtered');
+            }}
+            checked={false}
+          />
+          <label for="filtered" title="from selected collection">
+            <i class="fa fa-dot-circle-o" aria-hidden="true" />
+          </label>
+          <input
+            type="radio"
+            name="payment"
+            id="all"
+            on:click={() => {
+              onLabelChange('all');
+            }}
+            checked={labelType === 3}
+          />
+          <label for="all" title="Across all detections">
+            <i class="fa fa-circle" aria-hidden="true" />
+            <!-- <span>All</span> -->
+          </label>
+        </span>
+      </span>
+      <div slot="details" id="label-select">
+        <Labels
+          groundTruth={$selectedImgBoxes['ground_truth']}
+          detectionBoxes={$selectedImgBoxes['detections']}
+          type={2}
+          {updateEntireGroundSet}
+          {updateGroundImg}
+          {updateImg}
+          {updateEntireSet}
+        />
+      </div>
+    </Accordion>
+  {/if}
+{/if}
 
 <style>
-  .checkmark {
+  .label-blob {
+    display: flex;
+  }
+
+  .label-selection {
+    display: flex;
+    gap: 5px;
+  }
+
+  label {
+    margin: auto;
+  }
+  .fa {
+    font-size: 16px;
+    padding-left: 4px;
+    padding-right: 4px;
+    border-radius: 3px;
     cursor: pointer;
   }
-  .line {
-    display: flex;
-    gap: 0.4em;
+  input[type='radio']:checked + label {
+    background-color: #0e0f0f;
+    color: #ffffff;
+    border-radius: 30%;
+    box-shadow: 0 15px 45px rgb(15, 16, 15, 0.2);
+  }
+  input[type='radio'] {
+    -webkit-appearance: none;
   }
 </style>

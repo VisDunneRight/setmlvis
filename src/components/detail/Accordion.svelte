@@ -62,6 +62,7 @@
 
   div.details {
     background-color: #cecece;
-    padding-left: 2rem;
+    margin-left: 2rem;
+    padding-left: 2px;
   }
 </style>

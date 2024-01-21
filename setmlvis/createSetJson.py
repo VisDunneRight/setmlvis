@@ -150,7 +150,7 @@ def generateFalseNegatives(dictionary, folderName, modelNames, objectClass):
                 false_negatives["FalseNegatives"][model_name].append(
                     {"imageId": img_id, "values": img_false_negatives}
                 )
-    dictionary["FalseNegatives"] = false_negatives
+    dictionary["false_negatives"] = false_negatives["FalseNegatives"]
     return dictionary
 
 
@@ -163,7 +163,7 @@ def updateFalseNegativesInDictionary(
     )
     # Iterate through each model in the existing dictionary
     for model in existingDictionary.get("models", {}):
-        modelFN = falseNegativesResults["FalseNegatives"].get(model.strip(","), [])
+        modelFN = falseNegativesResults["false_negatives"].get(model.strip(","), [])
 
         # Iterate through each image detection for the model
         for detection in existingDictionary["models"][model]:
@@ -418,6 +418,7 @@ def getEachImageInformation(
                     previous_gt_shapes,
                     used_gt_by_image,
                     imgGtMap,
+                    modelNames,
                 )
                 if FULLDEBUG:
                     print("\t subSet:", time.time() - start)
@@ -457,6 +458,7 @@ def getRealSets(
     previous_gt_shapes,
     used_gt_by_image,
     imgGtMap,
+    modelNames,
 ):
     """
     This function finds the intersection and union between sets of bounding boxes and returns a list of dictionaries containing information about the bounding boxes with the highest IOU.
@@ -603,8 +605,20 @@ def getRealSets(
                     newDict["shape"] = [filterClass] + shape
                     confidenceArray = []
                     for v in value:
-                        confidenceArray.append(v[-1])
+                        confidenceArray.append(float(v[-1]))
+
                     newDict["confidence"] = confidenceArray
+                    total_models = len(modelNames)
+                    agreements = len(confidenceArray)
+                    average_confidence = sum(confidenceArray) / agreements
+
+                    # Use a quadratic function for the agreement factor
+                    agreement_ratio = agreements / total_models
+                    agreement_factor = agreement_ratio**2
+                    # Calculate and add weighted confidence
+                    newDict["weightedConfidence"] = (
+                        average_confidence * agreement_factor
+                    )
                     dictionary[str(count)] = newDict
                     count = count + 1
                     # dictionary.append(newDict)

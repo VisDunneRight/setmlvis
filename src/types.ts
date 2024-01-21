@@ -1,11 +1,18 @@
 //Shared file that contains all types used in the work
 
 export type Data = {
+  false_negatives: Record<string, Array<ImgFalse>>;
   meta: Meta;
   models: Models;
   ground_truth: Array<ObjectDect>;
   imgs: Array<Image>;
 };
+
+export type ImgFalse = {
+  imageId: number;
+  values: Array<ObjectDect>;
+};
+
 export type Models = Record<string, Array<DataRes>>;
 
 export type DataRes = {
@@ -37,19 +44,30 @@ export type ImgBoxes =
 
 export type GroundTruthObj = {
   data: Array<GroundTruth>;
-  selected: number;
+  selected: [number, number, number];
 };
-export type GroundTruth = { id: number; shape: ObjectDect; selected: boolean };
+
+export type GroundTruth = {
+  id: number;
+  shape: ObjectDect;
+  selected: boolean;
+  type: number;
+};
+
+export type DetectObject = {
+  data: Array<Detect>;
+  selected: [number, number, number];
+};
 
 export type Detection = {
-  [key: string]: { data: Array<Detect>; selected: number };
+  [key: string]: DetectObject;
 };
 
 export type Sort = {
   [key: string]: number;
 };
 
-export type Detect = { selected: boolean; data: Boxes };
+export type Detect = { selected: boolean; data: Box; type: number; id: string };
 
 export type Image =
   | {
@@ -67,6 +85,7 @@ export type ImgData = {
   id: string;
   imgId: number;
   tags: Array<string>;
+  weightedConfidence: number;
 
   category: 'duplicate' | 'low_threshold' | 'far_away' | 'wrong_class';
   iouGT: number;
@@ -96,6 +115,14 @@ export type SliderType = {
   step: number;
   value: number;
   updatefunction: (arg0: any) => void;
+};
+
+export type Tag = Record<string, TagInfo>;
+
+export type TagInfo = {
+  count: number;
+  selected: boolean;
+  name: string;
 };
 
 export type DoubleSliderType = {

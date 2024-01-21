@@ -2,7 +2,7 @@ import type { Writable } from 'svelte/store';
 import type { DOMWidgetModel } from '@jupyter-widgets/base';
 
 import { writable } from 'svelte/store';
-import type { Data, ImgData, StringNumMap, ImgBoxes } from './types';
+import type { Data, ImgData, StringNumMap, ImgBoxes, TagInfo } from './types';
 
 // //boilerplate code that will be ignored for now
 // interface WidgetWritable<T> extends Writable<T> {
@@ -96,6 +96,8 @@ export let windowWidth: Writable<number>;
 export let menuWidth: Writable<number>;
 export let selectedImg: Writable<ImgData | undefined>;
 export let selectedImgIdx: Writable<number>;
+export let colSelected: Writable<number>;
+export let barSelected: Writable<string>;
 export let openDetailView: Writable<boolean>;
 export let openCollectionMenu: Writable<boolean>;
 export let breakdown: Writable<boolean>;
@@ -103,7 +105,11 @@ export let colorMap: Writable<StringNumMap>;
 export let confidence: Writable<[number, number]>;
 export let detectionSize: Writable<[number, number]>;
 export let topHeight: Writable<number>;
-export let tags: Writable<Array<string>>;
+export let tags: Writable<Record<string, TagInfo>>;
+export let showTags: Writable<boolean>;
+export let showWeightedConfidence: Writable<boolean>;
+
+export let weightedConfidence: Writable<[number, number]>;
 
 // Set the model for each store you create.
 export function setStoreModels(model: DOMWidgetModel): void {
@@ -112,6 +118,7 @@ export function setStoreModels(model: DOMWidgetModel): void {
   dataset = createSyncedWidget<Data>(
     'dataset',
     {
+      false_negatives: {},
       meta: {
         folderName: '',
         modelNames: [],
@@ -129,7 +136,7 @@ export function setStoreModels(model: DOMWidgetModel): void {
     {},
     model
   );
-  console.log(model);
+
   num_instances = createSyncedWidget<number>('num_instances', 0, model);
   height = createSyncedWidget<number>('height', 800, model);
   IOU = createSyncedWidget<number>('IOU', 0.8, model);
@@ -141,11 +148,16 @@ export function setStoreModels(model: DOMWidgetModel): void {
   selectedImg = writable(undefined);
   selectedImgBoxes = writable(undefined);
   selectedImgIdx = writable(-1);
+  barSelected = writable('');
+  colSelected = writable(-1);
   openDetailView = writable(false);
   openCollectionMenu = writable(false);
   breakdown = writable(false);
+  showWeightedConfidence = writable(false);
+  showTags = writable(true);
+  weightedConfidence = writable<[number, number]>([0.7, 1.0]);
   colorMap = writable<StringNumMap>({});
   confidence = writable<[number, number]>([0.7, 1.0]);
   detectionSize = writable<[number, number]>([0.01, 0.4]);
-  tags = writable<Array<string>>([]);
+  tags = writable<Record<string, TagInfo>>({});
 }

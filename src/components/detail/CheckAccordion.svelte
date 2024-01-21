@@ -32,7 +32,7 @@
         {#if check === 2}
           <Checked size={20} color={colorCheck} />
         {:else if check === 1}
-          <CheckedMinus size={24} color={colorCheck} />
+          <CheckedMinus size={20} color={colorCheck} />
         {:else}
           <Unchecked size={20} color={colorCheck} />
         {/if}
