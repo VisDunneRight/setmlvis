@@ -6,4 +6,4 @@ Information about the frontend package of the widgets.
 """
 
 module_name = "setmlvis"
-module_version = "^0.2.8"
+module_version = "^0.5.0"
