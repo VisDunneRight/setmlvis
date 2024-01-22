@@ -25,7 +25,12 @@ class Counter:
 
 
 def createSetJson(
-    *, folderName: str, objectClass: str, jsonName: str = None, setIou: float
+    *,
+    folderName: str,
+    objectClass: str,
+    jsonName: str = None,
+    setIou: float,
+    colab: bool,
 ) -> dict:
     """
     Create a JSON file that contains information about objects in a specified class, stored in a given folder.
@@ -66,7 +71,7 @@ def createSetJson(
     if DEBUG:
         print("finalDictionary:", finalTime - diff, "s")
     finalDictionaryWithMetadata = generateMetadata(
-        folderName, finalDictionary, modelNames, setIou, imgGt
+        folderName, colab, finalDictionary, modelNames, setIou, imgGt
     )
 
     finalDictionaryWithMetadata = updateFalseNegativesInDictionary(
@@ -80,7 +85,7 @@ def createSetJson(
     return finalDictionaryWithMetadata
 
 
-def generateMetadata(folderName, dictionary, modelNames, setIOU, imgGt):
+def generateMetadata(folderName, colab, dictionary, modelNames, setIOU, imgGt):
     """
     Adds metadata to a dictionary object.
 
@@ -94,11 +99,29 @@ def generateMetadata(folderName, dictionary, modelNames, setIOU, imgGt):
 
     """
     newDict = {}
-    newDict["meta"] = {
-        "folderName": folderName + "images/",
-        "modelNames": modelNames,
-        "setIOU": setIOU,
-    }
+    if colab == False:
+        newDict["meta"] = {
+            "folderName": folderName + "images/",
+            "modelNames": modelNames,
+            "setIOU": setIOU,
+        }
+    else:
+        parts = folderName.split("/")
+
+        # Remove empty strings and the 'usr' and 'local' parts
+        parts = [
+            part
+            for part in parts
+            if part and part not in ["usr", "local", "share", "jupyter"]
+        ]
+
+        # Construct the new path
+        collabName = "/" + "/".join(parts) + "/images/"
+        newDict["meta"] = {
+            "folderName": collabName,
+            "modelNames": modelNames,
+            "setIOU": setIOU,
+        }
     newDict["models"] = dictionary
     newDict["ground_truth"] = imgGt["ground_truth"]
     newDict["imgs"] = imgGt["imgs"]
@@ -150,7 +173,7 @@ def generateFalseNegatives(dictionary, folderName, modelNames, objectClass):
                 false_negatives["FalseNegatives"][model_name].append(
                     {"imageId": img_id, "values": img_false_negatives}
                 )
-    dictionary["false_negatives"] = false_negatives["FalseNegatives"]
+    dictionary["FalseNegatives"] = false_negatives
     return dictionary
 
 
@@ -163,7 +186,7 @@ def updateFalseNegativesInDictionary(
     )
     # Iterate through each model in the existing dictionary
     for model in existingDictionary.get("models", {}):
-        modelFN = falseNegativesResults["false_negatives"].get(model.strip(","), [])
+        modelFN = falseNegativesResults["FalseNegatives"].get(model.strip(","), [])
 
         # Iterate through each image detection for the model
         for detection in existingDictionary["models"][model]:

@@ -511,11 +511,11 @@
             </div>
           </MenuItems>
         </Menu>
-        <VisToggle
+        <!-- <VisToggle
           message={'Group Images'}
           activeColor="blueviolet"
           inactiveColor="#540077"
-        />
+        /> -->
       </div>
       <div style="display:flex;color:#f3edeb;">
         <div class="collection-count">
