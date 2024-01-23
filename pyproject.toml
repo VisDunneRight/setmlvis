@@ -37,7 +37,7 @@ dependencies = [
     "Pillow>=9.5",
     "rtree>=1.1.0",
 ]
-version = "0.2.8"
+version = "0.5.0"
 
 [project.optional-dependencies]
 docs = [

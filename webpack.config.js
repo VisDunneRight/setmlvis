@@ -31,6 +31,11 @@ const resolve = {
   mainFields: ['svelte', 'browser', 'module', 'main'],
 };
 
+const performance = {
+  maxAssetSize: 512000,
+  maxEntrypointSize: 512000,
+};
+
 module.exports = [
   /**
    * Lab extension

@@ -55,7 +55,7 @@
   "devDependencies": {
     "@babel/core": "^7.5.0",
     "@babel/preset-env": "^7.5.0",
-    "@jupyterlab/builder": "^3.0.0",
+    "@jupyterlab/builder": "^3 || ^4",
     "@lumino/application": "^1.6.0",
     "@lumino/widgets": "^1.6.0",
     "@rgossiaux/svelte-headlessui": "^2.0.0",
