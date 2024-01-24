@@ -6,12 +6,17 @@
 
 A new visualization method for comparing different models for bounding box detection.
 
+
+![Screenshot](docs\docs\public\mainInterface.png)
+
+The easiest way to try out SetMLVis is to use our getting started [Colab notebook](https://colab.research.google.com/drive/1-tuGJ9RpCm3ROBjUD2lHiRK2H9Tgoc6V?usp=sharing)
+
 ## Installation
 
 You can install using `pip`:
 
 ```bash
-pip install setmlvis
+pip install setmlvis -U
 ```
 
 If you are using Jupyter Notebook 5.2 or earlier, you may also need to enable
