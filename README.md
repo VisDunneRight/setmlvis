@@ -1,5 +1,7 @@
+<h1>
+  <img src="logo-translucent.svg" alt="Logo"style="vertical-align: middle;" width="80" height="50"/> SetMLVis
+</h1>
 
-# setmlvis
 
 [![Build Status](https://travis-ci.org/VisDunneRight/setmlvis.svg?branch=master)](https://travis-ci.org/VisDunneRight/setmlvis)
 [![codecov](https://codecov.io/gh/VisDunneRight/setmlvis/branch/master/graph/badge.svg)](https://codecov.io/gh/VisDunneRight/setmlvis)
