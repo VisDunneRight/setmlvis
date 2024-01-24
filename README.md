@@ -3,10 +3,11 @@
 
 A new visualization method for comparing different models for bounding box detection.
 
+The easiest way to try out SetMLVis is to use our getting started [Colab notebook](https://colab.research.google.com/drive/1-tuGJ9RpCm3ROBjUD2lHiRK2H9Tgoc6V?usp=sharing)
+
 
 ![Screenshot](mainInterface.png)
 
-The easiest way to try out SetMLVis is to use our getting started [Colab notebook](https://colab.research.google.com/drive/1-tuGJ9RpCm3ROBjUD2lHiRK2H9Tgoc6V?usp=sharing)
 
 ## Installation
 
