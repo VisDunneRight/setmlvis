@@ -1,10 +1,7 @@
-<h1>
-  <img src="logo-translucent.svg" alt="Logo"style="vertical-align: middle;" width="80" height="50"/> SetMLVis
-</h1>
+# SetMLVis
 
-
-[![Build Status](https://travis-ci.org/VisDunneRight/setmlvis.svg?branch=master)](https://travis-ci.org/VisDunneRight/setmlvis)
-[![codecov](https://codecov.io/gh/VisDunneRight/setmlvis/branch/master/graph/badge.svg)](https://codecov.io/gh/VisDunneRight/setmlvis)
+<div> <img src="logo-translucent.svg" alt="Logo" width="150" height="100"/>
+</div>
 
 A new visualization method for comparing different models for bounding box detection.
 
