@@ -1,4 +1,6 @@
-export default {
+import { defineConfig } from 'vitepress'
+
+export default defineConfig({
   base: '/setmlvis/',
   title: "SetMLVis",
   description: "Documentation for an interactive object detection model comparison tool: SetMLVis",
@@ -107,4 +109,4 @@ export default {
     returnToTopLabel: 'Go to Top',
     sidebarMenuLabel: 'Menu',
   },
-};
+});
