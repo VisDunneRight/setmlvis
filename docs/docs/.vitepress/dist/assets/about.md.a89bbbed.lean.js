@@ -1,0 +1,1 @@
+import{_ as s,o as a,c as o,V as n}from"./chunks/framework.7ae304b1.js";const p="/logo.svg",d=JSON.parse('{"title":"About","description":"","frontmatter":{},"headers":[],"relativePath":"about.md","filePath":"about.md"}'),t={name:"about.md"},l=n("",8),e=[l];function r(c,D,y,i,A,C){return a(),o("div",null,e)}const u=s(t,[["render",r]]);export{d as __pageData,u as default};

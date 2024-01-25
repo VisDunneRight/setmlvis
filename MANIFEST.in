@@ -16,7 +16,6 @@ graft docs
 exclude docs/\#*
 prune docs/build
 prune docs/gh-pages
-prune docs/dist
 
 # Examples
 graft examples
@@ -35,8 +34,9 @@ prune tests/build
 graft setmlvis/nbextension
 graft src
 graft css
-prune **/node_modules
+
 prune coverage
+prune **/node_modules
 prune lib
 
 # Patterns to exclude from any directory
