@@ -1,5 +1,5 @@
-<h1>
-  <img src="logo-translucent.svg" alt="Logo"style="vertical-align: middle;" width="80" height="50"/> SetMLVis
+<h1> SetMLVis
+  <img src="logo-translucent.svg" alt="Logo"style="vertical-align: middle;" width="80" height="50"/>
 </h1>
 
 

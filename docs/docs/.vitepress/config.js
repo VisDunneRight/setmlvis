@@ -16,7 +16,7 @@ export default {
     nav: [
       { text: "About", link: "/about" },
       { text: "Contact", link: "/contact" },
-      { text: "Guide", link: "/guide" },
+      { text: "Guide", link: "/guide/" },
       
     ],
     // Social Icons
@@ -25,32 +25,65 @@ export default {
       
     ],
     // Sidebar
-    sidebar: [
+   sidebar: {
+    
+    "/guide/": [
       {
-        text: "Section A",
-        collapsible: true,
+        text: 'Introduction',
+        collapsed: false,
         items: [
-          { text: "Introduction", link: "/introduction" },
-          { text: "Getting Started", link: "/getting-started" },
-        ],
+          { text: 'What is SetMLVis', link: '/guide/' },
+          { text: 'Getting Started', link: '/guide/getting_started.md' },
+        ]
       },
       {
-        text: "Section B",
-        collapsible: false,
+        text: 'Using SetMLVis',
+        collapsed: false,
         items: [
-          { text: "Introduction", link: "/introduction" },
-          { text: "Getting Started", link: "/getting-started" },
-        ],
+          { text: 'Object Detection Datasets',
+            collapsed: false,
+            items: [
+            { text: 'Data Input', link: '/guide/first_steps.md' },
+            { text: 'CreateSetJson', link: '/guide/using_selections.md' },
+            ]
+          },
+          { text: 'User Interface',
+            collapsed: false,
+            items: [
+            { text: 'Overview', link: '/guide/prefabs/planetext.md' },
+            { text: 'Set Visualization', link: '/guide/prefabs/axes.md' },
+            { text: 'Thumbnail View', link: '/guide/prefabs/chromatic.md'},
+            { text: 'Detail View View', link: '/guide/prefabs/chromatic.md'}
+            ]
+          },
+          {
+            text: 'Miscellaneous',link: '/guide/prefabs/planetext.md' },
+
+          
+  
+         
+        ]
       },
-      {
-        text: "Section C",
-        collapsible: true,
-        items: [
-          { text: "Introduction", link: "/introduction" },
-          { text: "Getting Started", link: "/getting-started" },
-        ],
-      },
+      // {
+      //   text: 'Prefabs',
+      //   collapsed: true,
+      //   items: [
+      //     { text: 'WIP', link: '' }
+      //   ]
+      // },
+      // {
+      //   text: 'Interactions',
+      //   collapsed: true,
+      //   items: [
+      //     { text: 'WIP', link: '' }
+      //   ]
+      // },
+      
+
     ],
+    
+  },
+   
     // you can disable the previous and next page here
     docFooter: {
       prev: false,
