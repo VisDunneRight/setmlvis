@@ -7,6 +7,7 @@ export default {
   ignoreDeadLinks: true,
   
   themeConfig: {
+    base: '/setmlvis/',
     logo: "/logo-translucent.svg",
     siteTitle: "SetMLVis",
     search: {
