@@ -1,4 +1,5 @@
 export default {
+  base: '/setmlvis/',
   title: "SetMLVis",
   description: "Documentation for an interactive object detection model comparison tool: SetMLVis",
   lang: 'en-US',
@@ -7,7 +8,7 @@ export default {
   ignoreDeadLinks: true,
   
   themeConfig: {
-    base: '/setmlvis/',
+    
     logo: "/logo-translucent.svg",
     siteTitle: "SetMLVis",
     search: {
