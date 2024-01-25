@@ -1,17 +1,13 @@
-<h1> SetMLVis
-  <img src="logo-translucent.svg" alt="Logo"style="vertical-align: middle;" width="80" height="50"/>
-</h1>
-
-
-[![Build Status](https://travis-ci.org/VisDunneRight/setmlvis.svg?branch=master)](https://travis-ci.org/VisDunneRight/setmlvis)
-[![codecov](https://codecov.io/gh/VisDunneRight/setmlvis/branch/master/graph/badge.svg)](https://codecov.io/gh/VisDunneRight/setmlvis)
+<div> <img src="logo-translucent.svg" alt="Logo" width="150" height="100"/>
+</div>
 
 A new visualization method for comparing different models for bounding box detection.
+
+The easiest way to try out SetMLVis is to use our getting started [Colab notebook](https://colab.research.google.com/drive/1-tuGJ9RpCm3ROBjUD2lHiRK2H9Tgoc6V?usp=sharing)
 
 
 ![Screenshot](mainInterface.png)
 
-The easiest way to try out SetMLVis is to use our getting started [Colab notebook](https://colab.research.google.com/drive/1-tuGJ9RpCm3ROBjUD2lHiRK2H9Tgoc6V?usp=sharing)
 
 ## Installation
 
